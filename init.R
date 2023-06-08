@@ -1,15 +1,15 @@
 ## Initialize Environment
 ## Load Packages ====
 pacman::p_load(
+  plotly,
+  dtplyr,
+  tidyverse,
+  dbplyr,
   syhelpr,
   table1,
   glue,
-  plotly,
-  survival,
-  survminer,
   janitor,
   vroom,
-  tidyverse,
   tidyjson,
   tidytext,
   gt,
@@ -21,7 +21,7 @@ pacman::p_load(
   syrnapi
 )
 
-options(width = 160)
+options(width = 150)
 
 
 ## Set standard plot margins ====
@@ -53,8 +53,14 @@ spmd <- DBI::dbConnect(
 )
 
 
-source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'func.R'))
-source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'cohort_func.R'))
-source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'plots.R'))
-source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'plotly_style.R'))
-source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'her2_func.R'))
+source(file.path('~/Projects/utils', 'func.R'))
+source(file.path('~/Projects/utils', 'cohort_func.R'))
+source(file.path('~/Projects/utils', 'lot_func.R'))
+source(file.path('~/Projects/utils', 'plots.R'))
+source(file.path('~/Projects/utils', 'plotly_style.R'))
+source(file.path('~/Projects/utils', 'her2_func.R'))
+# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'func.R'))
+# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'cohort_func.R'))
+# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'plots.R'))
+# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'plotly_style.R'))
+# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'her2_func.R'))
