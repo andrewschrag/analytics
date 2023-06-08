@@ -60,7 +60,7 @@ get_mutation_oc <- function(gene,
     filter(genenamesomatic == .gene, alterationtype == 'mutation') %>%
     syhelpr::map_oc(mutationstate, 'mutation')
 
-  positive <<- tested %>%
+  positive = tested %>%
     filter(mutationstate == 'Mutated') %>%
     left_join(
       biomarker_report,
