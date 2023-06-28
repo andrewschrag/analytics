@@ -1,8 +1,14 @@
 kms_api_call <- function(api_root, params = list()){
-  res = httr::GET(api_root, query = params)
-  output = try(RJSONIO::fromJSON(
-    httr::content(res, as="text", encoding = 'UTF-8'), warn = F)$data %>%
-      map_df(.f = ~.x))
+  output = NULL
+  tryCatch({
+    response = httr::GET(api_root, query = params)
+    httr::stop_for_status(response)
+    output = RJSONIO::fromJSON(httr::content(response, as="text", encoding = 'UTF-8'), warn = F)$data %>% map_df(.f = ~.x)
+    ## ...
+  }, http_error=function(e) {
+    output = NULL
+  })
+
   return(output)
 }
 
@@ -13,6 +19,7 @@ kms_normalize_variant <-
            gene_col = 'gene',
            cols = c()) {
 
+    api_root = 'https://ci-knowledge-sqa.syapse.com/api/V1/variant_normalization?'
     .gene_col = sym(gene_col)
     .col_aminoacid = sym(aminoacidchange_col)
     .col_codingchange = sym(codingchange_col)
@@ -23,7 +30,8 @@ kms_normalize_variant <-
                codingchange = gsub(' ', '', {{ .col_codingchange }}),
                aminoacidchange = gsub(' ', '', {{ .col_aminoacid }})) %>%
       as.list
-    api_root = 'https://ci-knowledge-sqa.syapse.com/api/V1/variant_normalization?'
+
+    variant_list <<- .data
 
     for(i in 1:length(.data[[1]])) {
       params = lapply(list(
@@ -45,7 +53,7 @@ kms_normalize_variant <-
       left_join(results_list %>% bind_rows,
                 by = c(setNames('codingchange_raw', codingchange_col),
                        setNames('aminoacidchange_raw', aminoacidchange_col),
-                       setNames('gene', gene_col)))
+                       setNames('gene_raw', gene_col)))
 
     return(output)
 }

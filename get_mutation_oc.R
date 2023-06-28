@@ -1,24 +1,104 @@
+#' Extract codingchange
+#'
+extract_variant_details <- function(df,
+                                    extract_col = 'biomarkername',
+                                    patterns = 'default',
+                                    group_cols = c(),
+                                    gene_col = 'gene',
+                                    normalize = T){
+
+  if(patterns == 'default'){
+    patterns = list(
+      aminoacidchange =
+           '((p\\.){0,1}(\\s){0,1}([a-z]{1,3}[0-9]{3}(_|-)[a-z]{1,3}[0-9]{3}|[a-z][0-9]{3}[a-z]|[a-z]{3}[0-9]{3}[a-z]{3})(dup|delins|del|ins){0,1}(ala|arg|asn|asp|cys|glu|gln|gly|his|ile|leu|lys|met|phe|pro|ser|thr|trp|tyr|val){0,4}[ACTGactg]{0,12})',
+      codingchange =
+           '((c.){0,1}(\\s){0,1}([0-9]{4}(_|-)[0-9]{4}|[0-9]{4}[a-z]{1}.[a-z]{1})(dup|delins|del|ins){0,1}[actg]{0,12}(\\<|\\>){0,1}[actg]{0,12})',
+      exon =
+           '([Ee]xon)(\\s){0,1}(1[0-9]|2[0-8]|[1-9])')
+  }
+
+  .col = sym(extract_col)
+  .gene = sym(gene_col)
+  .codingchange = intersect(c('variantnamec', 'codingchange'), names(df))[1]
+  .codingchange_col = sym(.codingchange)
+  .aminoacidchange = intersect(c('variantnamep', 'aminoacidchange'), names(df))[1]
+  .aminoacidchange_col = sym(.aminoacidchange)
+  .exon = intersect(c('variantnameexon', 'exons'), names(df))[1]
+  .exon_col = sym(.exon)
+  .variant_cols = c(.aminoacidchange, .codingchange, .exon)
+
+  output = df %>%
+    filter(!is.na({{.col}})) %>%
+    mutate(search_col = gsub(
+      '(no t790m mutation|genes tested.*|clinical significance.*|list of egfr exon.*|interpretation:.*|technical note:.*|\\(|\\))',
+      ' ',
+      gsub('-', '_', tolower({{.col}}))
+    )) %>%
+    group_by_at(c('patientid', 'search_col', gene_col, extract_col, group_cols, .variant_cols)) %>%
+    unnest_tokens(
+      word,
+      search_col,
+      drop = FALSE,
+      token = "regex",
+      pattern = "[\'\",:;!?=()\\[\\]\\s]"
+    ) %>%
+    anti_join(get_stopwords()) %>%
+    mutate(codingchange_raw = gsub("^([^c.].*)", "c.\\1",
+                                   coalesce({{.codingchange_col}}, str_extract(word, patterns$codingchange))),
+           aminoacidchange_raw = gsub("^([^p.].*)", "p.\\1",
+                                      coalesce({{.aminoacidchange_col}}, str_extract(word, patterns$aminoacidchange))),
+           exon = str_extract(coalesce({{.exon_col}}, str_extract(search_col, patterns$exon)), '(1[0-9]|2[0-8]|[1-9])'),
+           varianttype = case_when(
+             grepl('deletion|del', search_col, ignore.case = T) ~ 'deletion',
+             grepl('insertion|ins|duplication|dup', search_col, ignore.case = T) ~ 'insertion',
+             TRUE ~ NA
+           )) %>%
+    select(-word) %>%
+    summarise(across(
+      c(
+        codingchange_raw,
+        aminoacidchange_raw,
+        exon,
+        varianttype
+      ),
+      ~ first(na.omit(.))
+    )) %>%
+    ungroup %>%
+    select(-search_col)
+
+
+  if(normalize) {
+    output = output %>%
+    kms_normalize_variant('codingchange_raw', 'aminoacidchange_raw',
+                          cols = c('exon', 'varianttype', extract_col, group_cols))
+  }
+
+  return(output)
+}
+
+
 #' Get OpenClinica Biomarker
 #' Allows for querying OpenClinica formdata directly to return
+#'
 get_mutation_oc <- function(gene,
                             normalize = T,
                             limit = 'ALL',
-                            patterns = list(p_pattern =
-                                              '^((p.){0,1}\\s{0,1}([a-z]{1,3}[0-9]{3}_[a-z]{1,3}[0-9]{3}|[a-z][0-9]{3}[a-z]|[a-z]{3}[0-9]{3}[a-z]{3})(dup|delins|del|ins){0,1}(ala|arg|asn|asp|cys|glu|gln|gly|his|ile|leu|lys|met|phe|pro|ser|thr|trp|tyr|val){0,4}[ACTGactg]{0,12})',
-                                            c_pattern =
-                                              '^((c.){0,1}\\s{0,1}([0-9]{4}[a-z]{1}.[a-z]{1}|[0-9]{4}(_|\\-)[0-9]{4})(dup|delins|del|ins){0,1}[actg]{0,12})',
-                                            e_pattern =
-                                              '([Ee]xon)\\s{0,1}(1[0-9]|2[0-8]|[1-9])'))
-{
+                            patterns = list(
+                              aminoacidchange =
+                                '((p\\.){0,1}(\\s){0,1}([a-z]{1,3}[0-9]{3}(_|-)[a-z]{1,3}[0-9]{3}|[a-z][0-9]{3}[a-z]|[a-z]{3}[0-9]{3}[a-z]{3})(dup|delins|del|ins){0,1}(ala|arg|asn|asp|cys|glu|gln|gly|his|ile|leu|lys|met|phe|pro|ser|thr|trp|tyr|val){0,4}[ACTGactg]{0,12})',
+                              codingchange =
+                                '((c.){0,1}(\\s){0,1}([0-9]{4}(_|-)[0-9]{4}|[0-9]{4}[a-z]{1}.[a-z]{1})(dup|delins|del|ins){0,1}[actg]{0,12}(\\<|\\>){0,1}[actg]{0,12})',
+                              exon =
+                                '([Ee]xon)(\\s){0,1}(1[0-9]|2[0-8]|[1-9])')){
   ## Setup
   .gene = tolower(gene)
   output = list()
   .variant_cols = c('variantnamec', 'variantnamep')#, 'variantnameexon')
 
   ## Regex patterns
-  p_pattern = patterns$p_pattern
-  c_pattern = patterns$c_pattern
-  e_pattern = patterns$e_pattern
+  p_pattern = patterns$aminoacidchange
+  c_pattern = patterns$codingchange
+  e_pattern = patterns$exon
 
   ## Get Data
   con = spmd_con('prod', max_char = 96000)
@@ -184,8 +264,8 @@ get_mutation_oc <- function(gene,
     '{counts[["with_report"]]} of {counts[["no_detail"]]} ({syhelpr::as_percent({counts[["with_report"]]} / {counts[["no_detail"]]})}) with no detail collected, but RAW report available',
     '{counts[["extracted"]]} of {counts[["with_report"]]} ({syhelpr::as_percent({counts[["extracted"]]} / {counts[["with_report"]]}, round = 1)}) with variant detail extracted from RAW report'
   )
-  lapply(.messages, function(x)
-    message(glue::glue(x))) %>% invisible
+  output$stats = lapply(.messages, function(x) glue::glue(x))
+  lapply(output$stats, function(x) message(x) %>% invisible)
 
   return(output)
 }

@@ -52,15 +52,17 @@ spmd <- DBI::dbConnect(
   MaxVarChar = 65568
 )
 
-
-source(file.path('~/Projects/utils', 'func.R'))
-source(file.path('~/Projects/utils', 'cohort_func.R'))
-source(file.path('~/Projects/utils', 'lot_func.R'))
-source(file.path('~/Projects/utils', 'plots.R'))
-source(file.path('~/Projects/utils', 'plotly_style.R'))
-source(file.path('~/Projects/utils', 'her2_func.R'))
-source(file.path('~/Projects/utils', 'get_mutation_oc.R'))
-source(file.path('~/Projects/utils', 'kms_api.R'))
+shared_root = '/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils/'
+source(file.path(shared_root, 'func.R'))
+source(file.path(shared_root, 'cohort_func.R'))
+source(file.path(shared_root, 'lot_func.R'))
+source(file.path(shared_root, 'plots.R'))
+source(file.path(shared_root, 'plotly_style.R'))
+source(file.path(shared_root, 'her2_func.R'))
+source(file.path(shared_root, 'get_mutation_oc.R'))
+source(file.path(shared_root, 'kms_api.R'))
+source(file.path(shared_root, 'swimmer_general.R'))
+source(file.path(shared_path, 'swimmer_urology.R'))
 # source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'func.R'))
 # source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'cohort_func.R'))
 # source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'plots.R'))

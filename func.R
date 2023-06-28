@@ -60,7 +60,6 @@ make_table1 <-
 
 
 
-
 ## Process Biomarker Calls
 process_call <- function(df, call_col = call) {
   call_col <- enquo(call_col)
@@ -88,7 +87,6 @@ process_call <- function(df, call_col = call) {
     )) %>%
     select(-call_simple)
 }
-
 
 
 
@@ -121,87 +119,6 @@ get_last_contact <- function(cohort_query, index = 'dx') {
       collect %>%
       convert_dates
 
-    # last_contact.procedure <-
-    #   tbl(.con, in_schema('mdr', 'procedure')) %>%
-    #   inner_join(.query) %>%
-    #   filter(startdts < today()) %>%
-    #   distinct(patientid,
-    #            startdts,
-    #            startdts_partial,
-    #            enddts,
-    #            enddts_partial) %>%
-    #   collect %>%
-    #   impute_dates %>%
-    #   group_by(patientid) %>%
-    #   summarise(
-    #     last_proc_date  = pmax(max(enddts, na.rm = T), max(startdts, na.rm = T), na.rm = T),
-    #     first_proc_date = min(startdts, na.rm = T)
-    #   ) %>%
-    #   ungroup %>%
-    #   collect %>%
-    #   convert_dates
-    #
-    #
-    # last_contact.diagnosis <-
-    #   tbl(.con, in_schema('mdr', 'diagnosis')) %>%
-    #   inner_join(.query) %>%
-    #   filter(coalesce(diagnosisdate, startdts) < today()) %>%
-    #   distinct(patientid, diagnosisdate, startdts) %>%
-    #   group_by(patientid) %>%
-    #   summarise(
-    #     last_dx_date  = pmax(
-    #       max(diagnosisdate, na.rm = T),
-    #       max(startdts, na.rm = T),
-    #       na.rm = T
-    #     ),
-    #     first_dx_date = pmin(
-    #       min(diagnosisdate, na.rm = T),
-    #       min(startdts, na.rm = T),
-    #       na.rm = T
-    #     )
-    #   ) %>%
-    #   ungroup %>%
-    #   collect %>%
-    #   convert_dates
-    #
-    # last_contact.tumor <- tbl(.con, in_schema('mdr', 'tumor')) %>%
-    #   inner_join(.query) %>%
-    #   distinct(patientid, diagnosisdate, diagnosisdate_partial) %>%
-    #   collect %>%
-    #   impute_dates %>%
-    #   group_by(patientid) %>%
-    #   summarise(
-    #     last_tumor_date  = max(diagnosisdate, na.rm = T),
-    #     first_tumor_date = min(diagnosisdate, na.rm = T)
-    #   ) %>%
-    #   ungroup %>%
-    #   convert_dates
-
-    # if (!exists('meds.raw')) {
-    #   meds.raw <<- tbl(.con, in_schema('ca', "medications")) %>%
-    #     inner_join(.query) %>%
-    #     filter(startdts <= today()) %>%
-    #     mutate(generic_name = coalesce(drugproduct, ordername)) %>%
-    #     distinct(patientid,
-    #              generic_name,
-    #              startdate = startdts,
-    #              enddate = enddts) %>%
-    #     collect
-    # }
-    #
-    # last_contact.meds <- meds.raw %>%
-    #   filter(startdate <= today()) %>%
-    #   group_by(patientid) %>%
-    #   summarise(
-    #     last_tx_date = pmax(max(enddate, na.rm = T), max(startdate, na.rm = T), na.rm = T),
-    #     first_tx_date = min(startdate, na.rm = T)
-    #   ) %>%
-    #   ungroup  %>%
-    #   arrange(patientid, desc(last_tx_date)) %>%
-    #   group_by(patientid) %>%
-    #   filter(row_number() == 1) %>%
-    #   ungroup %>%
-    #   convert_dates
     last_contact.oc <-
       tbl(.con, in_schema('openclinica', 'follow_up')) %>%
       distinct(patientid = syapse_patient_id, last_contact_date_oc = ma_dateoflastcontact) %>%
@@ -217,9 +134,6 @@ get_last_contact <- function(cohort_query, index = 'dx') {
 
     output <- .cohort %>%
       left_join(last_contact.encounter) %>%
-      #left_join(last_contact.tumor) %>%
-      # left_join(last_contact.meds) %>%
-      # left_join(last_contact.procedure) %>%
       left_join(last_contact.oc) %>%
       left_join(death_dates) %>%
       distinct %>%
@@ -228,10 +142,8 @@ get_last_contact <- function(cohort_query, index = 'dx') {
       group_by(patientid) %>%
       mutate(
         first_contact_date = first_encounter_date,
-        #if_else(index == 'dx', first_tumor_date, first_encounter_date),
         last_contact_date = pmax(
           last_encounter_date,
-          # last_tx_date,
           last_contact_date_oc,
           na.rm = TRUE
         ),
@@ -293,61 +205,7 @@ elapsed_months <- function(start_date, end_date) {
 }
 
 
-
-
-
-## Functions ====
-# NAACCR Map
-get_naaccr_map <- function(column, spmd = spmd_con()) {
-  tbl(spmd, in_schema("ca", "map_naaccr_dict")) %>%
-    filter(tolower(naaccr_item_id) == column)
-}
-
-search_naaccr_cols <- function(pattern) {
-  naaccr_colnames <-
-    tbl(spmd, in_schema('ca', 'registry_naaccr')) %>% colnames
-
-  naaccr_colnames[grepl(pattern, naaccr_colnames)]
-}
-
-# Search NAACCR
-search_naaccr <-
-  function(column,
-           search_term = NULL,
-           spmd = spmd_con(),
-           cols = c()) {
-    desc_col = sym(paste0(column, '_description'))
-    tbl(spmd, in_schema("ca", "registry_naaccr")) %>%
-      left_join(get_naaccr_map(column, spmd) %>%
-                  select(code, description),
-                by = setNames("code", column)) %>%
-      rename({{ desc_col }} := description) %>%
-      {
-        if (!is.null(search_term))
-          filter(., description == search_term)
-        else
-          .
-      } %>%
-      #filter(!is.na(description)) %>%
-      select(patientid = clientid,
-             mrn = patientidnumber,
-             sourcename,
-             column,
-             {{ desc_col }},
-             all_of(cols))
-  }
-
-
 ## NAACCR Functions ====
-
-search_naaccr_cols <- function(pattern) {
-  naaccr_colnames <-
-    tbl(spmd, in_schema('registry', 'aurora_naaccr')) %>% head(0) %>% collect %>% names
-
-  naaccr_colnames[grepl(pattern, naaccr_colnames)]
-}
-
-
 get_naaccr_cancer_types <-
   function(cancer_type = '[a-z]') {
     results <- list()
@@ -429,7 +287,6 @@ clean_registry_stage <- function(df, stage_col, prefix = NULL) {
     )
   return(df)
 }
-
 
 
 naaccr_med_search <- function(pattern) {
@@ -663,209 +520,6 @@ apply_factors <-
 
 
 
-
-
-
-
-
-get_confirmed_surgeries <- function (df,
-                                     pat_col = patientid,
-                                     schema = "mdr",
-                                     cancer_type = "breast") {
-  tictoc::tic("====>> run time")
-  print(
-    glue::glue(
-      "{timestamp()} - pulling confirmed (related encounter) surgeries for patients with '{cancer_type}'..."
-    )
-  )
-  surgery_regex_values = dplyr::tribble(
-    ~ cancer_type,
-    ~ regex,
-    "breast",
-    "lumpectomy|quadrantectomy|mastectomy|excisional biopsy|axillary lymphadenectomy|wide excision",
-  )
-  surgery_regex = surgery_regex_values %>% filter(cancer_type ==
-                                                    cancer_type) %>% pull(regex)
-  pat_col <- enquo(pat_col)
-  procedures_confirmed <-
-    tbl(spmd, in_schema("mdr", "procedure")) %>%
-    filter(proceduretype == "Surgery") %>%
-    select(
-      patientid,
-      proceduretype,
-      proceduretype_rawvalue,
-      procedure_rawvalue,
-      startdts,
-      sourceschema
-    ) %>%
-    collect %>%
-    inner_join(df %>%
-                 distinct(!!pat_col), by = quo_name(pat_col)) %>% mutate(
-                   procedure = tolower(procedure_rawvalue),
-                   relevant_surgery = ifelse(grepl(surgery_regex, procedure,
-                                                   ignore.case = T),
-                                             "Yes",
-                                             "No")
-                 ) %>% filter(relevant_surgery ==
-                                "Yes") %>% left_join(tbl(spmd, in_schema("ca", "map_definitive_surgery")) %>%
-                                                       as_tibble %>% filter(cancer_type == cancer_type),
-                                                     by = "procedure") %>%
-    mutate(
-      startdts = as.Date(startdts),
-      procedure = case_when(
-        procedure ==
-          "mastectomy, simple" ~ "mastectomy",
-        TRUE ~ procedure
-      )
-    ) %>%
-    filter(!is.na(rollup)) %>% left_join(
-      tbl(spmd, in_schema(schema,
-                          "encounter")) %>% filter(encountertype == "Inpatient") %>%
-        select(patientid, startdts) %>% collect %>% mutate(
-          startdts = as.Date(startdts),
-          related_encounter = "Yes"
-        ),
-      by = c("patientid", "startdts")
-    ) %>%
-    filter(related_encounter == "Yes" | (grepl(
-      "ascension",
-      sourceschema, ignore.case = T
-    ))) %>% select(
-      -c(
-        procedure,
-        cancer_type,
-        relevant_surgery,
-        sourceschema,
-        related_encounter,
-        proceduretype
-      )
-    ) %>% distinct
-  print(glue::glue("{timestamp()} - get_confirmed_surgeries() complete"))
-  tictoc::toc()
-  return(procedures_confirmed)
-}
-
-
-build_med_regex <- function (med_regex, spmd = spmd_con())
-{
-  if (!is.character(med_regex)) {
-    stop("med_regex is not a character vector")
-  }
-  if (length(med_regex) > 1) {
-    stop("med_regex is not a character vector of length one (not a string)")
-  }
-  if (!spmd_list_tables("ca") %>% filter(table_name == "map_atc") %>%
-      count() %>% pull(n) > 0) {
-    stop(
-      "ca.map_atc does not exist! Please rebuild and try again:\n",
-      "library(syhelpr)\n",
-      "map_atc <- build_atc_table()\n",
-      "spmd_write_table(map_atc,'map_atc',overwrite = TRUE)"
-    )
-  }
-  tbl(spmd, in_schema("ca", "map_atc")) %>%
-    filter(grepl(med_regex, all_names_regex, ignore.case = TRUE)) %>%
-    collect %>%
-    mutate(all_names_regex =  gsub('/\\W+/g', '.*', all_names_regex, perl = T)) %>%
-    pull(all_names_regex) %>%
-    str_split("\\|") %>% c(str_split(med_regex, "\\|"), .) %>%
-    unlist() %>% unique() %>% paste0(collapse = "|", sep = "")
-}
-
-
-
-get_medrio_biomarkers_breast <- function(gene) {
-  medrio_biomarker.query <-
-    tbl(spmd, in_schema('medrio', 'breast_biomarkers')) %>%
-    inner_join(tbl(.$src$con, in_schema('ca', 'map_spmd_subjectid'))) %>%
-    filter(!is.na(vargroup1row))
-  medrio_biomarker.query %>% head(0) %>% collect %>% names
-  brca.ma <- medrio_biomarker.query %>%
-    collect %>%
-    mutate(
-      biomarker_name = coalesce(breast_germline_biomarker, breast_somatic_biomarker),
-      genomicsource = case_when(
-        !is.na(breast_germline_biomarker) ~ 'Germline',
-        !is.na(breast_somatic_biomarker) ~ 'Somatic'
-      )
-    ) %>%
-    filter(grepl(gene, biomarker_name),
-           mutation_state == 'Mutated') %>%
-    mutate(
-      genomicsource = biomarker_class,
-      specific_variant = ifelse(
-        grepl('not stated|unknown|unk', specific_variant, ignore.case = TRUE),
-        'Variant Not Stated',
-        specific_variant #gsub(' .*$|\\:|\\(|\\)|\\,|\\;', '', specific_variant)
-      ),
-      codingchange  = trimws(gsub(
-        ' .*$|\\:|\\(|\\)|\\,|\\;',
-        ' ',
-        gsub(
-          'c(\\.){0,1}',
-          'c.',
-          str_extract(
-            gsub('\\(|\\)', ' ', biomarker_raw),
-            'c(\\.){0,1}[0-9]{2,4}.*'
-          )
-        )
-      )),
-      aminoacidchange = trimws(gsub(
-        ' .*$|\\:|\\(|\\)|\\,|\\;',
-        ' ',
-        str_extract(
-          gsub('\\(|\\)', ' ', biomarker_raw),
-          'p(\\.){0,1}[A-Z]{1}[a-z]{2,3}.*'
-        )
-      )),
-      variant = trimws(gsub(
-        '\\(|\\)', '', paste(
-          replace_na(codingchange, ''),
-          ifelse(
-            grepl('p\\.', specific_variant),
-            specific_variant,
-            replace_na(aminoacidchange, '')
-          )
-        )
-      ), which = 'both'),
-      variant = ifelse(variant == '', specific_variant, variant),
-      aminoacidchange = coalesce(aminoacidchange, str_extract(variant, 'p\\..*')),
-      gene = gsub(' Mutation', '', biomarker_name)
-    ) %>%
-    impute_dates %>%
-    rename(reportdate = report_date,
-           call = mutation_state,
-           biomarkertype = biomarker_class) %>%
-    process_call %>%
-    select(
-      patientid,
-      reportdate,
-      call_clean,
-      logical,
-      genomicsource,
-      gene,
-      variant,
-      codingchange,
-      aminoacidchange
-    ) %>%
-    distinct %>%
-    group_by(patientid) %>%
-    mutate_at(.vars = c('variant'), ~ paste(unique(unlist(str_split(
-      ., " "
-    ))), collapse = " ")) %>%
-    mutate(aminoacidchange = trimws(str_remove(
-      aminoacidchange, replace_na(codingchange, 'NONE')
-    )),
-    codingchange = trimws(str_remove(
-      codingchange, replace_na(aminoacidchange, 'NONE')
-    )))
-  return(brca.ma)
-}
-
-
-
-
-
 closest_to_index <-
   function(df,
            index_date,
@@ -970,132 +624,6 @@ refresh_cohort_counts <- function(recreate_mat_view = FALSE) {
 }
 
 
-# source(
-#   file.path(
-#     '/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils/cohort_func.R'
-#   )
-# )
-
-source(
-  file.path(
-    '/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils/swimmer_general.R'
-  )
-)
-source(
-  file.path(
-    '/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils/swimmer_urology.R'
-  )
-)
-
-
-
-
-impute_date_oc <-   function (.data,
-                              date_col_nm,
-                              day = "15",
-                              month_day = "06-30",
-                              impute_year = T,
-                              keep_partial_date_field = F)
-{
-  day = as.character(day)
-  gran_col_nm = str_c(date_col_nm, "_granularity")
-  y_col_nm <- str_c(date_col_nm, "_y")
-  ym_col_nm <- str_c(date_col_nm, "_ym")
-  unk_col_nm <- str_c(date_col_nm, "_unk")
-  contains_unk = unk_col_nm %in% (.data %>% colnames)
-  .data = .data %>% check_for_column(!!rlang::sym(date_col_nm),
-                                     .class = c("character", "Date")) %>% check_for_column(!!rlang::sym(y_col_nm),
-                                                                                           .class = c("character", "Date")) %>% check_for_column(!!rlang::sym(ym_col_nm),
-                                                                                                                                                 .class = c("character", "Date"))
-  .data_transformed = .data %>% mutate(
-    `:=`(!!date_col_nm,
-         as.character(!!rlang::sym(date_col_nm))),
-    `:=`(
-      !!gran_col_nm,
-      case_when(
-        !is.na(!!rlang::sym(date_col_nm)) ~ "DAY",
-        !is.na(!!rlang::sym(ym_col_nm)) ~ "MONTH",!is.na(!!rlang::sym(y_col_nm)) ~
-          "YEAR",
-        TRUE ~ "NONE"
-      )
-    ),
-    `:=`(!!date_col_nm,
-         lubridate::as_date(
-           case_when(
-             !!rlang::sym(gran_col_nm) ==
-               "DAY" ~ !!rlang::sym(date_col_nm),!!rlang::sym(gran_col_nm) ==
-               "MONTH" ~ str_c(str_sub(!!rlang::sym(ym_col_nm),
-                                       1, 7), "-", day),!!rlang::sym(gran_col_nm) == "YEAR" &
-               impute_year ~ str_c(str_sub(!!rlang::sym(y_col_nm),
-                                           1, 4), "-", month_day),
-             TRUE ~ NA_character_
-           )
-         )),
-    .after = !!date_col_nm
-  )
-  if (!keep_partial_date_field) {
-    .data_transformed = .data_transformed %>% select(-all_of(c(y_col_nm,
-                                                               ym_col_nm)))
-    if (contains_unk) {
-      .data_transformed = .data_transformed %>% select(-all_of(unk_col_nm))
-    }
-  }
-  return(.data_transformed)
-}
-
-
-impute_date_oc <-   function (.data,
-                              date_col_nm,
-                              day = "15",
-                              month_day = "06-30",
-                              impute_year = T,
-                              keep_partial_date_field = F)
-{
-  day = as.character(day)
-  gran_col_nm = str_c(date_col_nm, "_granularity")
-  y_col_nm <- str_c(date_col_nm, "_y")
-  ym_col_nm <- str_c(date_col_nm, "_ym")
-  unk_col_nm <- str_c(date_col_nm, "_unk")
-  contains_unk = unk_col_nm %in% (.data %>% colnames)
-  .data = .data %>% check_for_column(!!rlang::sym(date_col_nm),
-                                     .class = c("character", "Date")) %>% check_for_column(!!rlang::sym(y_col_nm),
-                                                                                           .class = c("character", "Date")) %>% check_for_column(!!rlang::sym(ym_col_nm),
-                                                                                                                                                 .class = c("character", "Date"))
-  .data_transformed = .data %>% mutate(
-    `:=`(!!date_col_nm,
-         as.character(!!rlang::sym(date_col_nm))),
-    `:=`(
-      !!gran_col_nm,
-      case_when(
-        !is.na(!!rlang::sym(date_col_nm)) ~ "DAY",
-        !is.na(!!rlang::sym(ym_col_nm)) ~ "MONTH",!is.na(!!rlang::sym(y_col_nm)) ~
-          "YEAR",
-        TRUE ~ "NONE"
-      )
-    ),
-    `:=`(!!date_col_nm,
-         lubridate::as_date(
-           case_when(
-             !!rlang::sym(gran_col_nm) ==
-               "DAY" ~ !!rlang::sym(date_col_nm),!!rlang::sym(gran_col_nm) ==
-               "MONTH" ~ str_c(str_sub(!!rlang::sym(ym_col_nm),
-                                       1, 7), "-", day),!!rlang::sym(gran_col_nm) == "YEAR" &
-               impute_year ~ str_c(str_sub(!!rlang::sym(y_col_nm),
-                                           1, 4), "-", month_day),
-             TRUE ~ NA_character_
-           )
-         )),
-    .after = !!date_col_nm
-  )
-  if (!keep_partial_date_field) {
-    .data_transformed = .data_transformed %>% select(-all_of(c(y_col_nm,
-                                                               ym_col_nm)))
-    if (contains_unk) {
-      .data_transformed = .data_transformed %>% select(-all_of(unk_col_nm))
-    }
-  }
-  return(.data_transformed)
-}
 
 
 
