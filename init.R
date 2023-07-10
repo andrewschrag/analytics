@@ -52,7 +52,7 @@ spmd <- DBI::dbConnect(
   MaxVarChar = 65568
 )
 
-shared_root = '/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils/'
+shared_root = 'https://raw.githubusercontent.com/andrewschrag/analytics/main/'
 source(file.path(shared_root, 'func.R'))
 source(file.path(shared_root, 'cohort_func.R'))
 source(file.path(shared_root, 'lot_func.R'))
