@@ -21,7 +21,7 @@ pacman::p_load(
   syrnapi
 )
 
-options(width = 150)
+options(width = 140)
 
 
 ## Set standard plot margins ====
