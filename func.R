@@ -385,7 +385,9 @@ attrition_table <-
       )
 
     if (html_output)
-      attr.table <- attr.table %>% sykable
+      attr.table <- attr.table %>% 
+        gtsummary::tbl_summary(missing = missing, sort = sort, ...) %>%
+        gtsummary::bold_labels()
     return(attr.table)
   }
 
