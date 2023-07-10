@@ -385,7 +385,7 @@ attrition_table <-
       )
 
     attr.table %>% 
-        gtsummary::tbl_summary(missing = 'ifany')
+        gt::gt()
   }
 
 
