@@ -384,11 +384,9 @@ attrition_table <-
         percent_excluded =  ifelse(row_number() == 1, '-', as_percent(n_excluded / lag(n)))
       )
 
-    if (html_output)
-      attr.table <- attr.table %>% 
-        gtsummary::tbl_summary(missing = missing, sort = sort, ...) %>%
+    attr.table %>% 
+        gtsummary::tbl_summary(missing = 'ifany') %>%
         gtsummary::bold_labels()
-    return(attr.table)
   }
 
 
