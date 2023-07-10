@@ -384,8 +384,9 @@ attrition_table <-
         percent_excluded =  ifelse(row_number() == 1, '-', as_percent(n_excluded / lag(n)))
       )
 
-    attr.table %>% 
-        gt::gt()
+    if (html_output)
+      attr.table <- attr.table %>% sykable
+    return(attr.table)
   }
 
 
