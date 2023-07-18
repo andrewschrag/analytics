@@ -846,3 +846,16 @@ get_ads_deid <- function(cohort='lung', env = 'prod'){
   ads <- arrow::read_parquet(ads_path) %>% as_tibble
   return(ads)
 }
+
+
+get_health_system_ads <- function(ads){
+  hs_data = tbl(spmd_con('prod'), in_schema('mdr', 'patient')) %>% 
+    filter(id %in% !!ads$patientid) %>% 
+    select(id, sourcename, suborg) %>% 
+    mutate(id = tolower(as.character(id))) %>% 
+    rename(patientid = id, health_system = sourcename) %>% 
+    collect %>% 
+    distinct
+  output = ads %>% left_join(hs_data, by = 'patientid')
+  return(output)
+}
