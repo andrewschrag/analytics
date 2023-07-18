@@ -859,3 +859,23 @@ get_health_system_ads <- function(ads){
   output = ads %>% left_join(hs_data, by = 'patientid')
   return(output)
 }
+
+#' Unnest Embedded Dataframe in ADS
+#' Provides a list of columns available in each table, by cohort
+#' 
+#' @param df dataframe/tibble containing Analytical Dataset
+#' @param col name of column where dataframe is embedded
+#' 
+#' @examples
+#' unnest_ads(systemic_therapy)
+#'
+unnest_ads <- function(df, col){    
+  .col = enquo(col)
+  patient_col = intersect(c("patientId", "patientid", "patient_id", "patientID", "patients", "patient", "subjectid"), names(df))[1]
+  patient_col = sym(patient_col)
+    
+  df %>%
+    select({{ patient_col }}, {{ .col }}) %>%
+    filter(!is.na({{ .col }})) %>%
+    unnest({{ .col }})
+}
