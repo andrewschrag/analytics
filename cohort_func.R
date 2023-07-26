@@ -5,7 +5,7 @@ get_cohort <-
   function(cohort,
            cohort_type = 'Curated',
            schema = 'mdr',
-           con = spmd_con('prod'), 
+           con = spmd_con(), 
            cols = c()) {
     tbl(con, in_schema("cohorts", "cohort")) %>%
       filter(tolower(name) == tolower(cohort),
