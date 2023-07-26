@@ -4,13 +4,12 @@
 get_cohort <-
   function(cohort,
            cohort_type = 'Curated',
-           schema = 'mdr',
            con = spmd_con(), 
-           cols = c()) {
+           schema = 'mdr') {
     tbl(con, in_schema("cohorts", "cohort")) %>%
       filter(tolower(name) == tolower(cohort),
              tolower(cohorttype) == tolower(cohort_type)) %>%
-      select(cohortid = id, name, cohorttype, addeddts, any_of(cols)) %>%
+      select(cohortid = id, name, cohorttype, addeddts) %>%
       inner_join(tbl(.$src$con, in_schema("cohorts", "currentcohortmember"))) %>%
       select(patientid, tumorid, cohorttype) %>%
       inner_join(
@@ -22,8 +21,7 @@ get_cohort <-
             tumortype,
             primarysite,
             histology,
-            sourcename, 
-            any_of(cols)
+            sourcename
           )
       ) %>%
       inner_join(tbl(.$src$con, in_schema(schema, 'patient')) %>% rename(patientid = id) %>% select(patientid, suborg)) %>%
