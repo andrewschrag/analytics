@@ -11,7 +11,7 @@ get_cohort <-
              tolower(cohorttype) == tolower(cohort_type)) %>%
       select(cohortid = id, name, cohorttype) %>%
       inner_join(tbl(.$src$con, in_schema("cohorts", "cohortmember"))) %>%
-      select(patientid, tumorid, cohorttype, entrancedate, exitdate) %>%
+      select(patientid, tumorid, cohorttype, entrancedate, exitdate, addeddts, updateddts) %>%
       inner_join(
         tbl(.$src$con, in_schema(schema, 'tumor')) %>%
           select(
