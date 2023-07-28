@@ -559,7 +559,7 @@ build_cohort <-
 
 
 
-build_Structured_cohort <-
+build_structured_cohort <-
   function(cohort_query,
            followup = FALSE,
            age_breaks = c(0, 50, 64, 74, Inf),
