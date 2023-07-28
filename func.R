@@ -64,7 +64,7 @@ make_table1 <-
 process_call <- function(df, call_col = call) {
   call_col <- enquo(call_col)
   call.map <-
-    tbl(spmd_con('clone'), in_schema('ca', 'map_biomarker_call')) %>% collect
+    tbl(spmd_con('prod'), in_schema('ca', 'map_biomarker_call')) %>% collect
 
   df %>%
     mutate(call = ifelse(
