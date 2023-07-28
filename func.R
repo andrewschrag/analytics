@@ -155,7 +155,7 @@ get_last_contact <- function(cohort_query, index = 'dx') {
         deceaseddate = max(deceaseddate, na.rm = TRUE)
       ) %>%
       ungroup %>%
-      mutate_if(is.Date, ~ifelse(is.infinite, NA_Date_ , .))
+      mutate_if(is.Date, ~ifelse(is.infinite(.), NA_Date_ , .))
   })
 
   print(glue::glue("{timestamp()} - get_last_contact() complete"))
