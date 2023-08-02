@@ -66,7 +66,6 @@ process_call <- function(df, call_col = call) {
   call.map <- tbl(spmd_con('prod'), in_schema('ca', 'map_biomarker_call')) %>% 
       collect %>% 
       mutate(call = tolower(call))
-
   df %>%
     mutate(call = ifelse(
       {if('biomarkertype' %in% names(.)) tolower(biomarkertype) else NULL} != "wild type",
