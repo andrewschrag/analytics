@@ -73,7 +73,7 @@ process_call <- function(df, call_col = call) {
       tolower(call),
       "negative"
     )) %>%
-    left_join(call.map, by = c(as.name(call_col)="call")) %>%
+    left_join(call.map, by = c("call")) %>%
     mutate(call = factor(
       call_simple,
       levels = c(
