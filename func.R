@@ -62,7 +62,7 @@ make_table1 <-
 
 ## Process Biomarker Calls
 process_call <- function(df, call_col = call) {
-  call_col <- enquo(call_col)
+  .call_col <- enquo(call_col)
   call.map <- tbl(spmd_con('prod'), in_schema('ca', 'map_biomarker_call')) %>% 
       collect %>% 
       mutate(call = tolower(call))
@@ -73,7 +73,7 @@ process_call <- function(df, call_col = call) {
       tolower(call),
       "negative"
     )) %>%
-    left_join(call.map, by = c("call")) %>%
+    left_join(call.map, by = c(as.name(call_col)="call")) %>%
     mutate(call = factor(
       call_simple,
       levels = c(
