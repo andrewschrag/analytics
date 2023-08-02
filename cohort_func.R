@@ -426,7 +426,7 @@ build_cohort <-
         'metastasisdate',
         'advanceddate')
     
-    cohorttypes = list_cohorts(cohort_name, con = con) %>% pull(cohorttype)
+    cohorttypes = list_cohorts(cohort_name, con=spmd_con('prod')) %>% pull(cohorttype)
     if ('Structured' %in% cohorttypes &
         'Structured' %in% .cohort_type) {
       cohort_base = 'Structured'
