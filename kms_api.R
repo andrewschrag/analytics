@@ -34,6 +34,7 @@ kms_normalize_variant <-
     variant_list = .data
 
     for(i in 1:length(.data[[1]])) {
+      svMisc::progress(i, length(.data[[1]]))
       params = lapply(list(
         gene = toupper(.data[['gene']][[i]]),
         codingchange = .data[['codingchange']][[i]],
@@ -41,7 +42,8 @@ kms_normalize_variant <-
       ), function(x) x[!is.na(x)])
 
       results_list[[i]] = kms_api_call(api_root, params)
-      message(glue::glue('{i} Requests Complete...'))
+      
+      if (i == length(.data[[1]])) message("Done!")
     }
 
     output = df %>%
