@@ -548,9 +548,9 @@ closest_to_index <-
 
 list_cohorts <-
   function(pattern = '[a-z]',
+           con = spmd_con(),
            realtime = F,
-           schema = 'cohorts',
-           con = spmd_con()) {
+           schema = 'cohorts') {
     if (realtime) {
       tbl(con, in_schema(schema, "cohort")) %>%
         select(cohortid = id, name, cohorttype, updateddts) %>%
