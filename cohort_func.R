@@ -407,7 +407,7 @@ build_cohort <-
            followup = FALSE,
            age_breaks = c(0, 50, 64, 74, Inf),
            age_labels = c('<50', '50-64', '65-74', '75+'),
-           con = spmd_con('clone'),
+           con = spmd_con('prod'),
            write_table = F,
            ...) {
     tictoc::tic('====>> build_cohort() run time')
