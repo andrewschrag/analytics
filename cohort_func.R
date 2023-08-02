@@ -426,7 +426,7 @@ build_cohort <-
         'metastasisdate',
         'advanceddate')
     
-    cohorttypes = list_cohorts(cohort_name) %>% pull(cohorttype)
+    cohorttypes = list_cohorts(cohort_name, con) %>% pull(cohorttype)
     if ('Structured' %in% cohorttypes &
         'Structured' %in% .cohort_type) {
       cohort_base = 'Structured'
@@ -550,7 +550,6 @@ build_cohort <-
       # )
       message("Writing table complete.")
     }
-    cohort_name = 'breast'
     
     message(glue::glue('{syhelpr::timestamp()} - build_cohort() complete'))
     tictoc::toc()
