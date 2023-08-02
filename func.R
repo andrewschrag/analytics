@@ -68,7 +68,7 @@ process_call <- function(df, call_col = call) {
       mutate(call = tolower(call))
   df %>%
     mutate(call = ifelse(
-      {if('biomarkertype' %in% names(.)) tolower(biomarkertype) else NULL} != "wild type",
+      tolower(biomarkertype) != "wild type",
       tolower(call),
       "negative"
     )) %>%
