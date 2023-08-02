@@ -73,18 +73,20 @@ process_call <- function(df, call_col = call) {
       "negative"
     )) %>%
     left_join(call.map, by = "call") %>%
-    mutate(call = factor(
-      call_simple,
-      levels = c(
-        "Positive",
-        "Equivocal",
-        "Negative",
-        "Low",
-        "Indeterminate",
-        "QNS",
-        "Unknown"
-      )
-    )) %>%
+    mutate(call = call_simple
+    #factor(
+    #  call_simple,
+    #  levels = c(
+    #    "Positive",
+    #    "Equivocal",
+    #    "Negative",
+    #    "Low",
+    #    "Indeterminate",
+    #    "QNS",
+    #    "Unknown"
+    #  )
+    #)
+    ) %>%
     select(-call_simple)
 }
 
