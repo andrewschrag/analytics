@@ -1,5 +1,6 @@
 ## Functions for building datasets and supporting quick reports.
-
+not_all_na <- function(x) any(!is.na(x))
+not_any_na <- function(x) all(!is.na(x))
 
 is.na.Date <- function(x)
   is.na(as.POSIXlt(x))
