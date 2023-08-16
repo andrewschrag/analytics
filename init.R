@@ -37,7 +37,7 @@ plot_margin <-
 
 #This is the connection config
 rds_client = botor_client("rds", region_name = "us-west-2")
-host = 'spmd-prod-clone.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com'
+host = host = 'spmd-prod.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com' #'spmd-prod-clone.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com'
 port = '5432'
 user = 'view'
 spmd <- DBI::dbConnect(
