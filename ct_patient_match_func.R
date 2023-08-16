@@ -419,7 +419,7 @@ build_ct_cohort <- function(followup = TRUE,
     mutate(isdeceased = if_else(!is.na(deceaseddate), TRUE, isdeceased)) %>% 
     mutate_if(is.logical, ~ replace_na(., FALSE)) %>%
     mutate_at(c('t', 'n', 'm'), ~ gsub(' NOS', '', na_if(., 'Not Applicable'))) %>%
-    rename_at(.vars = c(t, n, m), ~paste0('stage_', .))
+    rename_at(c('t', 'n', 'm'), ~ paste0('stage_', .))
   
   if (followup) {
     output$cohort = output$cohort %>%
