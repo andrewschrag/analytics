@@ -549,7 +549,7 @@ closest_to_index <-
 
 list_cohorts <-
   function(pattern = '[a-z]',
-           con = spmd_con(),
+           con = spmd_con('prod'),
            realtime = FALSE,
            schema = 'cohorts') {
     if (realtime) {
