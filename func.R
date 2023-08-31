@@ -731,9 +731,10 @@ build_all_encounters <-
 make_table <- function (df, ..., sort = c(all_categorical() ~ "frequency"), missing = 'ifany'){
   df %>% tbl_summary(missing = missing, sort = sort, ...) %>%
     bold_labels() %>%
+    modify_header(label = "") %>% 
     # as_gt() %>%
     # gt:::as.tags.gt_tbl() %>%
-    suppressWarnings()%>%
+    suppressWarnings() %>%
     suppressMessages()
 }
 
