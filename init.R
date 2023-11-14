@@ -5,6 +5,7 @@ pacman::p_load(
   dtplyr,
   tidyverse,
   dbplyr,
+  DBI,
   syhelpr,
   table1,
   glue,
@@ -21,7 +22,7 @@ pacman::p_load(
   syrnapi
 )
 
-options(width = 150)
+options(width = 140)
 
 
 ## Set standard plot margins ====
@@ -37,7 +38,7 @@ plot_margin <-
 
 #This is the connection config
 rds_client = botor_client("rds", region_name = "us-west-2")
-host = 'spmd-prod-clone.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com'
+host = host = 'spmd-prod.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com' #'spmd-prod-clone.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com'
 port = '5432'
 user = 'view'
 spmd <- DBI::dbConnect(
@@ -52,19 +53,14 @@ spmd <- DBI::dbConnect(
   MaxVarChar = 65568
 )
 
-shared_root = '/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils/'
+shared_root = 'https://raw.githubusercontent.com/andrewschrag/analytics/main/'
 source(file.path(shared_root, 'func.R'))
 source(file.path(shared_root, 'cohort_func.R'))
 source(file.path(shared_root, 'lot_func.R'))
-source(file.path(shared_root, 'plots.R'))
-source(file.path(shared_root, 'plotly_style.R'))
+#source(file.path(shared_root, 'plots.R'))
+#source(file.path(shared_root, 'plotly_style.R'))
 source(file.path(shared_root, 'her2_func.R'))
 source(file.path(shared_root, 'get_mutation_oc.R'))
 source(file.path(shared_root, 'kms_api.R'))
 source(file.path(shared_root, 'swimmer_general.R'))
 source(file.path(shared_root, 'swimmer_urology.R'))
-# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'func.R'))
-# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'cohort_func.R'))
-# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'plots.R'))
-# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'plotly_style.R'))
-# source(file.path('/var/lib/rstudio-server/rstudio-users/syapse-shared/aschrag/utils', 'her2_func.R'))

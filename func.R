@@ -1,5 +1,6 @@
 ## Functions for building datasets and supporting quick reports.
-
+not_all_na <- function(x) any(!is.na(x))
+not_any_na <- function(x) all(!is.na(x))
 
 is.na.Date <- function(x)
   is.na(as.POSIXlt(x))
@@ -62,29 +63,31 @@ make_table1 <-
 
 ## Process Biomarker Calls
 process_call <- function(df, call_col = call) {
-  call_col <- enquo(call_col)
-  call.map <-
-    tbl(spmd_con('clone'), in_schema('ca', 'map_biomarker_call')) %>% collect
-
+  .call_col <- enquo(call_col)
+  call.map <- tbl(spmd_con('prod'), in_schema('ca', 'map_biomarker_call')) %>% 
+      collect %>% 
+      mutate(call = tolower(call))
   df %>%
     mutate(call = ifelse(
-      tolower(biomarkertype) == "wild type",
-      "NEGATIVE",
-      toupper(call)
+      tolower(biomarkertype) != "wild type",
+      tolower(call),
+      "negative"
     )) %>%
-    left_join(call.map, by = c("call")) %>%
-    mutate(call = factor(
-      call_simple,
-      levels = c(
-        "Positive",
-        "Equivocal",
-        "Negative",
-        "Low",
-        "Indeterminate",
-        "QNS",
-        "Unknown"
-      )
-    )) %>%
+    left_join(call.map, by = "call") %>%
+    mutate(call = call_simple
+    #factor(
+    #  call_simple,
+    #  levels = c(
+    #    "Positive",
+    #    "Equivocal",
+    #    "Negative",
+    #    "Low",
+    #    "Indeterminate",
+    #    "QNS",
+    #    "Unknown"
+    #  )
+    #)
+    ) %>%
     select(-call_simple)
 }
 
@@ -154,7 +157,8 @@ get_last_contact <- function(cohort_query, index = 'dx') {
         first_contact_date = min(first_contact_date, na.rm = TRUE),
         deceaseddate = max(deceaseddate, na.rm = TRUE)
       ) %>%
-      ungroup
+      ungroup %>%
+      mutate_if(is.Date, ~if_else(is.infinite(.), NA_Date_ , .))
   })
 
   print(glue::glue("{timestamp()} - get_last_contact() complete"))
@@ -545,9 +549,9 @@ closest_to_index <-
 
 list_cohorts <-
   function(pattern = '[a-z]',
-           realtime = F,
-           schema = 'cohorts',
-           con = spmd_con()) {
+           con = spmd_con('prod'),
+           realtime = FALSE,
+           schema = 'cohorts') {
     if (realtime) {
       tbl(con, in_schema(schema, "cohort")) %>%
         select(cohortid = id, name, cohorttype, updateddts) %>%
@@ -727,9 +731,10 @@ build_all_encounters <-
 make_table <- function (df, ..., sort = c(all_categorical() ~ "frequency"), missing = 'ifany'){
   df %>% tbl_summary(missing = missing, sort = sort, ...) %>%
     bold_labels() %>%
+    modify_header(label = "") %>% 
     # as_gt() %>%
     # gt:::as.tags.gt_tbl() %>%
-    suppressWarnings()%>%
+    suppressWarnings() %>%
     suppressMessages()
 }
 
@@ -845,4 +850,37 @@ get_ads_deid <- function(cohort='lung', env = 'prod'){
   message(glue::glue('Getting ADS from { s3_root }/{ .cohort }.parquet'))
   ads <- arrow::read_parquet(ads_path) %>% as_tibble
   return(ads)
+}
+
+
+get_health_system_ads <- function(ads){
+  hs_data = tbl(spmd_con('prod'), in_schema('mdr', 'patient')) %>% 
+    filter(id %in% !!ads$patientid) %>% 
+    select(id, sourcename, suborg) %>% 
+    mutate(id = tolower(as.character(id))) %>% 
+    rename(patientid = id, health_system = sourcename) %>% 
+    collect %>% 
+    distinct
+  output = ads %>% left_join(hs_data, by = 'patientid')
+  return(output)
+}
+
+#' Unnest Embedded Dataframe in ADS
+#' Provides a list of columns available in each table, by cohort
+#' 
+#' @param df dataframe/tibble containing Analytical Dataset
+#' @param col name of column where dataframe is embedded
+#' 
+#' @examples
+#' unnest_ads(systemic_therapy)
+#'
+unnest_ads <- function(df, col){    
+  .col = enquo(col)
+  patient_col = intersect(c("patientId", "patientid", "patient_id", "patientID", "patients", "patient", "subjectid"), names(df))[1]
+  patient_col = sym(patient_col)
+    
+  df %>%
+    select({{ patient_col }}, {{ .col }}) %>%
+    filter(!is.na({{ .col }})) %>%
+    unnest({{ .col }})
 }

@@ -4,14 +4,14 @@
 get_cohort <-
   function(cohort,
            cohort_type = 'Curated',
-           schema = 'mdr',
-           con = spmd_con()) {
+           con = spmd_con(), 
+           schema = 'mdr') {
     tbl(con, in_schema("cohorts", "cohort")) %>%
       filter(tolower(name) == tolower(cohort),
              tolower(cohorttype) == tolower(cohort_type)) %>%
       select(cohortid = id, name, cohorttype) %>%
-      inner_join(tbl(.$src$con, in_schema("cohorts", "currentcohortmember"))) %>%
-      select(patientid, tumorid, cohorttype) %>%
+      inner_join(tbl(.$src$con, in_schema("cohorts", "cohortmember"))) %>%
+      select(patientid, tumorid, cohorttype, entrancedate, exitdate, addeddts, updateddts) %>%
       inner_join(
         tbl(.$src$con, in_schema(schema, 'tumor')) %>%
           select(
@@ -407,7 +407,7 @@ build_cohort <-
            followup = FALSE,
            age_breaks = c(0, 50, 64, 74, Inf),
            age_labels = c('<50', '50-64', '65-74', '75+'),
-           con = spmd_con('clone'),
+           con = spmd_con('prod'),
            write_table = F,
            ...) {
     tictoc::tic('====>> build_cohort() run time')
@@ -426,7 +426,7 @@ build_cohort <-
         'metastasisdate',
         'advanceddate')
     
-    cohorttypes = list_cohorts(cohort_name) %>% pull(cohorttype)
+    cohorttypes = list_cohorts(cohort_name, con=spmd_con('prod')) %>% pull(cohorttype)
     if ('Structured' %in% cohorttypes &
         'Structured' %in% .cohort_type) {
       cohort_base = 'Structured'
@@ -550,7 +550,6 @@ build_cohort <-
       # )
       message("Writing table complete.")
     }
-    cohort_name = 'breast'
     
     message(glue::glue('{syhelpr::timestamp()} - build_cohort() complete'))
     tictoc::toc()
@@ -559,7 +558,7 @@ build_cohort <-
 
 
 
-build_Structured_cohort <-
+build_structured_cohort <-
   function(cohort_query,
            followup = FALSE,
            age_breaks = c(0, 50, 64, 74, Inf),

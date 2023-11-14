@@ -31,9 +31,10 @@ kms_normalize_variant <-
                aminoacidchange = gsub(' ', '', {{ .col_aminoacid }})) %>%
       as.list
 
-    variant_list <<- .data
+    variant_list = .data
 
     for(i in 1:length(.data[[1]])) {
+      svMisc::progress(i, length(.data[[1]]))
       params = lapply(list(
         gene = toupper(.data[['gene']][[i]]),
         codingchange = .data[['codingchange']][[i]],
@@ -41,6 +42,8 @@ kms_normalize_variant <-
       ), function(x) x[!is.na(x)])
 
       results_list[[i]] = kms_api_call(api_root, params)
+      
+      if (i == length(.data[[1]])) message("Done!")
     }
 
     output = df %>%
