@@ -37,4 +37,3 @@ setup_new_env <- function(){
   }
   reticulate::use_miniconda('~/.local/share/r-miniconda/envs/r-reticulate/bin/python')
 }
-
