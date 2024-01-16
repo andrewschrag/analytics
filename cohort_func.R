@@ -36,7 +36,7 @@ get_last_contact <- function(cohort_query, index = 'dx') {
   .query = cohort_query %>% select(patientid)
   .cohort = .query %>% collect
 
-  tictoc::tictoc::tic("====>> run time")
+  tictoc::tic("====>> run time")
   print(
     glue::glue(
       "{timestamp()} - finding last contact for {nrow(.cohort %>% distinct(patientid))} patients..."
@@ -98,7 +98,7 @@ get_last_contact <- function(cohort_query, index = 'dx') {
   })
 
   print(glue::glue("{timestamp()} - get_last_contact() complete"))
-  tictoc::tictoc::toc()
+  tictoc::toc()
   return(output)
 }
 
@@ -486,7 +486,7 @@ build_cohort <-
            con = spmd_con('prod'),
            write_table = F,
            ...) {
-    tictoc::tictoc::tic('====>> build_cohort() run time')
+    tictoc::tic('====>> build_cohort() run time')
     message(glue::glue('{syhelpr::timestamp()} - building {cohort_name} cohort'))
     
     output = list()
@@ -628,7 +628,7 @@ build_cohort <-
     }
     
     message(glue::glue('{syhelpr::timestamp()} - build_cohort() complete'))
-    tictoc::tictoc::toc()
+    tictoc::toc()
     return(output[c('cohort', 'queries')])
   }
 
