@@ -29,6 +29,82 @@ get_cohort <-
   }
 
 
+
+## Get Last Contact date
+get_last_contact <- function(cohort_query, index = 'dx') {
+  .con = cohort_query$src$con
+  .query = cohort_query %>% select(patientid)
+  .cohort = .query %>% collect
+
+  tictoc::tic("====>> run time")
+  print(
+    glue::glue(
+      "{timestamp()} - finding last contact for {nrow(.cohort %>% distinct(patientid))} patients..."
+    )
+  )
+
+  suppressWarnings({
+    last_contact.encounter <-
+      tbl(.con, in_schema('ca', 'all_encounters')) %>%
+      inner_join(.query) %>%
+      filter(encounter_date < today()) %>%
+      distinct(patientid, encounter_date) %>%
+      group_by(patientid) %>%
+      summarise(
+        last_encounter_date =  max(encounter_date, na.rm = T),
+        first_encounter_date = min(encounter_date, na.rm = T)
+      ) %>%
+      ungroup %>%
+      collect %>%
+      convert_dates
+
+    last_contact.oc <-
+      tbl(.con, in_schema('openclinica', 'follow_up')) %>%
+      distinct(patientid = syapse_patient_id, last_contact_date_oc = ma_dateoflastcontact) %>%
+      inner_join(.query %>% mutate(patientid = as.character(patientid))) %>%
+      collect
+
+    death_dates <-
+      tbl(.con, in_schema('mdr', 'patient')) %>%
+      rename(patientid = id) %>%
+      inner_join(.query) %>%
+      distinct(patientid, deceaseddate) %>%
+      collect
+
+    output <- .cohort %>%
+      left_join(last_contact.encounter) %>%
+      left_join(last_contact.oc) %>%
+      left_join(death_dates) %>%
+      distinct %>%
+      convert_dates %>%
+      mutate_if(is.Date, ~ if_else(. > today(), NA_Date_, .)) %>%
+      group_by(patientid) %>%
+      mutate(
+        first_contact_date = first_encounter_date,
+        last_contact_date = pmax(
+          last_encounter_date,
+          last_contact_date_oc,
+          na.rm = TRUE
+        ),
+        deceaseddate = if_else(deceaseddate < last_contact_date, NA_Date_, deceaseddate)
+      ) %>%
+      summarise(
+        last_contact_date = max(last_contact_date, na.rm = TRUE),
+        first_contact_date = min(first_contact_date, na.rm = TRUE),
+        deceaseddate = max(deceaseddate, na.rm = TRUE)
+      ) %>%
+      ungroup %>%
+      mutate_if(is.Date, ~if_else(is.infinite(.), NA_Date_ , .))
+  })
+
+  print(glue::glue("{timestamp()} - get_last_contact() complete"))
+  tictoc::toc()
+  return(output)
+}
+
+
+
+
 get_stage <-
   function(cohort_query,
            cols = c(),
