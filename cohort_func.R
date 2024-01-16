@@ -36,7 +36,7 @@ get_last_contact <- function(cohort_query, index = 'dx') {
   .query = cohort_query %>% select(patientid)
   .cohort = .query %>% collect
 
-  tictoc::tic("====>> run time")
+  tictoc::tictoc::tic("====>> run time")
   print(
     glue::glue(
       "{timestamp()} - finding last contact for {nrow(.cohort %>% distinct(patientid))} patients..."
@@ -98,7 +98,7 @@ get_last_contact <- function(cohort_query, index = 'dx') {
   })
 
   print(glue::glue("{timestamp()} - get_last_contact() complete"))
-  tictoc::toc()
+  tictoc::tictoc::toc()
   return(output)
 }
 
@@ -486,7 +486,7 @@ build_cohort <-
            con = spmd_con('prod'),
            write_table = F,
            ...) {
-    tictoc::tic('====>> build_cohort() run time')
+    tictoc::tictoc::tic('====>> build_cohort() run time')
     message(glue::glue('{syhelpr::timestamp()} - building {cohort_name} cohort'))
     
     output = list()
@@ -628,7 +628,7 @@ build_cohort <-
     }
     
     message(glue::glue('{syhelpr::timestamp()} - build_cohort() complete'))
-    tictoc::toc()
+    tictoc::tictoc::toc()
     return(output[c('cohort', 'queries')])
   }
 
@@ -650,7 +650,7 @@ build_custom_cohort <- build_structured_cohort <-
         'advanceddate')
     
     #### Cancer Cohort ====
-    tic('==> cohort query')
+    tictoc::tic('==> cohort query')
     cohorts = list()
     output$queries$Structured = cohort_query
     .cohort = cohort_query %>%
@@ -667,37 +667,37 @@ build_custom_cohort <- build_structured_cohort <-
     
     output$data$cancer =
       cohorts %>% reduce(left_join) %>% mutate_if(is.logical, ~ replace_na(., FALSE))
-    toc()
+    tictoc::toc()
     
-    tic('==> demographics')
+    tictoc::tic('==> demographics')
     output$data$demographics =
       get_demographics(cohort_query,
                        schema = schema,
                        cols = c('birthdate')) %>%
       select(-deceaseddate)
-    toc()
+    tictoc::toc()
     
-    tic('==> stage')
+    tictoc::tic('==> stage')
     output$data$stage =
       get_stage(cohort_query,
                 schema = schema,
                 cols = c('t', 'n', 'm'))
-    toc()
+    tictoc::toc()
     
-    tic('==> metastasis')
+    tictoc::tic('==> metastasis')
     output$data$metastasis =
       get_metastasis_date(cohort_query, schema = schema, 'first')
-    toc()
+    tictoc::toc()
     
-    tic('==> recurrence regional')
+    tictoc::tic('==> recurrence regional')
     output$data$recurrence_regional =
       get_recurrence_date(cohort_query, 'regional', 'first', schema = schema)
-    toc()
+    tictoc::toc()
     
-    tic('==> recurrence distant')
+    tictoc::tic('==> recurrence distant')
     output$data$recurrence_distant =
       get_recurrence_date(cohort_query, 'distant', 'first', schema = schema)
-    toc()
+    tictoc::toc()
     
     if (followup) {
       output$data$last_contact = get_last_contact(cohort_query)
