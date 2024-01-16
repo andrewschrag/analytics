@@ -4,7 +4,7 @@
 get_cohort <-
   function(cohort,
            cohort_type = 'Curated',
-           con = spmd_con(), 
+           con = spmd_con(),
            schema = 'mdr') {
     tbl(con, in_schema("cohorts", "cohort")) %>%
       filter(tolower(name) == tolower(cohort),
@@ -112,7 +112,7 @@ get_stage <-
            one_row = TRUE,
            con = spmd_con()) {
     patients = cohort_query %>% select(patientid) %>% collect %>% distinct %>% pull(patientid)
-    
+
     df <- tbl(con, in_schema(schema, "stage")) %>%
       filter(patientid %in% !!patients) %>%
       #inner_join(cohort_query %>% select(patientid)) %>%
@@ -148,7 +148,7 @@ get_stage <-
         else
           .
       }
-    
+
     df %>%
       # mutate_at(.vars = c('stage', 'stage_group'), ~ replace_na(., 'Unknown')) %>%
       select(patientid,
@@ -242,7 +242,7 @@ get_metastasis_date <- function(cohort_query,
     group_by(patientid, metastasisdate) %>%
     summarise(mets_site = paste0(mets_site, collapse = ', ')) %>%
     ungroup
-  
+
   metastasis =
     tbl(cohort_query$src$con, in_schema(schema, 'metastasis')) %>%
     distinct(patientid,
@@ -251,18 +251,18 @@ get_metastasis_date <- function(cohort_query,
              mets_site = bodysite) %>%
     collect %>%
     impute_dates
-  
+
   output = bind_rows(secondary_cancer, metastasis) %>%
     select(-metastasisdate_granularity) %>%
     arrange(patientid, metastasisdate)
-  
+
   if (return == 'first') {
     output = output %>% filter_first_patient_row()
   }
   if (output %>% check_for_dupes() %>% nrow > 0) {
     warning('!!!! Duplicate Records Present - Please Review')
   }
-  
+
   return(output)
 }
 
@@ -302,7 +302,7 @@ get_recurrence_date <-
       'Regional',
       'Regional'
     )
-    
+
     recurrence <-
       tbl(cohort_query$src$con, in_schema(schema, 'recurrence')) %>%
       filter(patientid %in% !!patients$patientid) %>%
@@ -315,7 +315,7 @@ get_recurrence_date <-
       left_join(map_bodysite) %>%
       mutate(bodysite = tolower(gsub(', NOS', '',  bodysite))) %>%
       arrange(patientid, recurrencedate)
-    
+
     if (recurrence_type %in% c('distant', 'regional')) {
       output = recurrence %>%
         filter(tolower(recurrencetype) == recurrence_type) %>%
@@ -341,15 +341,15 @@ get_recurrence_date <-
         distinct %>%
         filter_first_patient_row()
     }
-    
+
     if (return == 'first') {
       output = output %>% filter_first_patient_row()
     }
-    
+
     if (output %>% check_for_dupes() %>% nrow > 0) {
       warning('!!!! Duplicate Records Present - Please Review')
     }
-    
+
     return(output)
   }
 
@@ -375,16 +375,16 @@ get_demographics <- function (cohort,
       ethnicity,
       tidyselect::all_of(cols)
     )
-  
-  
-  
+
+
+
   # if (typeof(cohort) == 'character') {
   #   demo_query = demo_query %>% dplyr::filter(patientid %in% !!cohort)
   # } else if (typeof(cohort) == 'list') {
   #   demo_query$src$con <- cohort$src$con
   #   demo_query = demo_query %>% inner_join(cohort %>% select(patientid))
   # }
-  
+
   demo_query %>%
     collect %>%
     distinct %>%
@@ -408,7 +408,7 @@ get_demographics <- function (cohort,
       )
     ) %>%
     ungroup
-  
+
 }
 
 
@@ -488,20 +488,20 @@ build_cohort <-
            ...) {
     tictoc::tic('====>> build_cohort() run time')
     message(glue::glue('{syhelpr::timestamp()} - building {cohort_name} cohort'))
-    
+
     output = list()
     .cohort_type = sort(factor(
       cohort_type,
       levels = c('Structured', 'Curated', 'Manual Abstraction', 'Enriched')
     ))
-    
-    
+
+
     index_cols =
       c('patientid',
         'diagnosisdate',
         'metastasisdate',
         'advanceddate')
-    
+
     cohorttypes = list_cohorts(cohort_name, con=spmd_con('prod')) %>% pull(cohorttype)
     if ('Structured' %in% cohorttypes &
         'Structured' %in% .cohort_type) {
@@ -509,7 +509,7 @@ build_cohort <-
     } else {
       cohort_base = 'Curated'
     }
-    
+
     #### Cancer Cohort ====
     cohorts = list()
     output$queries  = list()
@@ -531,9 +531,9 @@ build_cohort <-
       if (nrow(.cohort) > 0)
         cohorts[[trimws(cohort_type)]] = .cohort
     }
-    
+
     cohort_query = output$queries[[cohort_base]] %>% select(patientid, diagnosisdate)
-    
+
     output$data$cancer = cohorts %>% reduce(full_join) %>% mutate_if(is.logical, ~ replace_na(., FALSE))
     output$data$demographics =
       get_demographics(cohort_query,
@@ -547,11 +547,11 @@ build_cohort <-
       get_recurrence_date(cohort_query, 'regional', 'first')
     output$data$recurrence_distant =
       get_recurrence_date(cohort_query, 'distant', 'first')
-    
+
     if (followup) {
       output$data$last_contact = get_last_contact(cohort_query)
     }
-    
+
     # output %>% reduce(left_join) %>% check_for_dupes()
     output$cohort = output$data %>%
       reduce(left_join) %>%
@@ -597,7 +597,7 @@ build_cohort <-
       rename(first_mets_site = mets_site) %>%
       mutate_if(is.logical, ~ replace_na(., FALSE)) %>%
       mutate_at(c('t', 'n', 'm'), ~ gsub(' NOS', '', na_if(., 'Not Applicable')))
-    
+
     if (followup) {
       output$cohort = output$cohort %>%
         mutate(
@@ -606,7 +606,7 @@ build_cohort <-
           followup = ifelse(followup < 0, NA_real_, followup)
         )
     }
-    
+
     if (write_table) {
       message(glue::glue("Writing table to ca.cohort_{tolower(cohort_name)}..."))
       dplyr::copy_to(
@@ -626,7 +626,7 @@ build_cohort <-
       # )
       message("Writing table complete.")
     }
-    
+
     message(glue::glue('{syhelpr::timestamp()} - build_cohort() complete'))
     tictoc::toc()
     return(output[c('cohort', 'queries')])
@@ -642,33 +642,35 @@ build_custom_cohort <- build_structured_cohort <-
            con = spmd_con(),
            schema = 'mdr') {
     output = list()
-    
+
     index_cols =
       c('patientid',
         'diagnosisdate',
         'metastasisdate',
         'advanceddate')
-    
+
     #### Cancer Cohort ====
     tictoc::tic('==> cohort query')
     cohorts = list()
-    output$queries$Structured = cohort_query
+    output$queries$Structured = cohort_query %>%
+      group_by(patientid) %>%
+      dbplyr::window_order(patientid, diagnosisdate) %>%
+      filter(row_number() == 1) %>%
+      ungroup
     .cohort = cohort_query %>%
       collect %>%
-      setNames(tolower(names(.))) %>%
-      arrange(patientid, diagnosisdate) %>%
-      filter_first_patient_row()
-    
+      setNames(tolower(names(.)))
+
     if (nrow(.cohort) > 0)
       cohorts$Structured = .cohort
-    
+
     cohort_query =
       output$queries$Structured %>% select(patientid, diagnosisdate)
-    
+
     output$data$cancer =
       cohorts %>% reduce(left_join) %>% mutate_if(is.logical, ~ replace_na(., FALSE))
     tictoc::toc()
-    
+
     tictoc::tic('==> demographics')
     output$data$demographics =
       get_demographics(cohort_query,
@@ -676,33 +678,33 @@ build_custom_cohort <- build_structured_cohort <-
                        cols = c('birthdate')) %>%
       select(-deceaseddate)
     tictoc::toc()
-    
+
     tictoc::tic('==> stage')
     output$data$stage =
       get_stage(cohort_query,
                 schema = schema,
                 cols = c('t', 'n', 'm'))
     tictoc::toc()
-    
+
     tictoc::tic('==> metastasis')
     output$data$metastasis =
       get_metastasis_date(cohort_query, schema = schema, 'first')
     tictoc::toc()
-    
+
     tictoc::tic('==> recurrence regional')
     output$data$recurrence_regional =
       get_recurrence_date(cohort_query, 'regional', 'first', schema = schema)
     tictoc::toc()
-    
+
     tictoc::tic('==> recurrence distant')
     output$data$recurrence_distant =
       get_recurrence_date(cohort_query, 'distant', 'first', schema = schema)
     tictoc::toc()
-    
+
     if (followup) {
       output$data$last_contact = get_last_contact(cohort_query)
     }
-    
+
     # output %>% reduce(left_join) %>% check_for_dupes()
     output$cohort = output$data %>%
       reduce(left_join) %>%
@@ -748,7 +750,7 @@ build_custom_cohort <- build_structured_cohort <-
       rename(first_mets_site = mets_site) %>%
       mutate_if(is.logical, ~ replace_na(., FALSE)) %>%
       mutate_at(c('t', 'n', 'm'), ~ gsub(' NOS', '', na_if(., 'Not Applicable')))
-    
+
     if (followup) {
       output$cohort = output$cohort %>%
         mutate(
@@ -756,7 +758,7 @@ build_custom_cohort <- build_structured_cohort <-
           followup = round(interval(diagnosisdate, last_contact_date) / months(1), 1)
         )
     }
-    
+
     return(output[c('cohort', 'queries')])
   }
 
