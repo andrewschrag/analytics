@@ -36,5 +36,4 @@ setup_new_env <- function(){
     reticulate::install_miniconda(path = '~/.local/share/r-miniconda/')
   }
   reticulate::use_miniconda('~/.local/share/r-miniconda/envs/r-reticulate/bin/python')
-}
 
