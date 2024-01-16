@@ -35,5 +35,4 @@ setup_new_env <- function(){
   if(!reticulate::condaenv_exists('~/.local/share/r-miniconda/envs/r-reticulate/')){
     reticulate::install_miniconda(path = '~/.local/share/r-miniconda/')
   }
-  reticulate::use_miniconda('~/.local/share/r-miniconda/envs/r-reticulate/bin/python')
-}
+  reticulate::use_miniconda('~/.local/share/r-miniconda/envs/r-reticulate/bin/python') }
