@@ -19,7 +19,8 @@ pacman::p_load(
   labelled,
   httr,
   jsonlite,
-  syrnapi
+  syrnapi,
+  tictoc
 )
 
 options(width = 140)
