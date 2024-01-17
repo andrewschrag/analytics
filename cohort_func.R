@@ -478,7 +478,7 @@ get_biomarker <- function (gene = NULL,
 
 
 build_cohort <-
-  function(cohort_name,
+  function(cohort,
            cohort_type = c('Structured', 'Curated', 'Enriched'),
            followup = FALSE,
            age_breaks = c(0, 50, 64, 74, Inf),
@@ -487,7 +487,7 @@ build_cohort <-
            write_table = F,
            ...) {
     tictoc::tic('====>> build_cohort() run time')
-    message(glue::glue('{syhelpr::timestamp()} - building {cohort_name} cohort'))
+    message(glue::glue('{syhelpr::timestamp()} - building {cohort} cohort'))
 
     output = list()
     .cohort_type = sort(factor(
@@ -502,7 +502,7 @@ build_cohort <-
         'metastasisdate',
         'advanceddate')
 
-    cohorttypes = list_cohorts(cohort_name, con=spmd_con('prod')) %>% pull(cohorttype)
+    cohorttypes = list_cohorts(cohort, con=spmd_con('prod')) %>% pull(cohorttype)
     if ('Structured' %in% cohorttypes &
         'Structured' %in% .cohort_type) {
       cohort_base = 'Structured'
@@ -511,10 +511,9 @@ build_cohort <-
     }
 
     #### Cancer Cohort ====
-    cohorts = list()
     output$queries  = list()
     for (cohort_type in .cohort_type) {
-      cohort.query = get_cohort(cohort_name, cohort_type, 'mdr', con = con)
+      cohort.query = get_cohort(cohort, cohort_type, 'mdr', con = con)
       output$queries[[trimws(cohort_type)]] = cohort.query
       .cohort = cohort.query %>%
         select(-c(cohorttype)) %>%
@@ -528,8 +527,6 @@ build_cohort <-
         setNames(tolower(names(.))) %>%
         arrange(patientid, diagnosisdate) %>%
         filter_first_patient_row()
-      if (nrow(.cohort) > 0)
-        cohorts[[trimws(cohort_type)]] = .cohort
     }
 
     cohort_query = output$queries[[cohort_base]] %>% select(patientid, diagnosisdate)
@@ -608,11 +605,11 @@ build_cohort <-
     }
 
     if (write_table) {
-      message(glue::glue("Writing table to ca.cohort_{tolower(cohort_name)}..."))
+      message(glue::glue("Writing table to ca.cohort_{tolower(cohort)}..."))
       dplyr::copy_to(
         spmd_con('prod', write = T),
         output$cohort,
-        in_schema('ca', glue::glue('cohort {cohort_name}')),
+        in_schema('ca', glue::glue('cohort {cohort}')),
         indexes = c('patientid'),
         temporary = FALSE,
         overwrite = TRUE,
@@ -620,7 +617,7 @@ build_cohort <-
       )
       # DBI::dbWriteTable(
       #   conn = spmd_con('prod', write = T),
-      #   name = in_schema('ca', glue::glue('cohort {cohort_name}')),
+      #   name = in_schema('ca', glue::glue('cohort {cohort}')),
       #   value = as.data.frame(output$cohort),
       #   overwrite = overwrite
       # )
@@ -634,38 +631,78 @@ build_cohort <-
 
 
 
-build_custom_cohort <- build_structured_cohort <-
-  function(cohort_query,
+build_cohort <- build_custom_cohort <- build_structured_cohort <-
+  function(cohort,
+           cohort_type = c('Structured', 'Curated', 'Enriched'),
            followup = FALSE,
            age_breaks = c(0, 50, 64, 74, Inf),
            age_labels = c('<50', '50-64', '65-74', '75+'),
-           con = spmd_con(),
-           schema = 'mdr') {
+           con = spmd_con('prod'),
+           schema = 'mdr',
+           write_table = F,
+           ...) {
+    custom_cohort_flag = !is.character(cohort)
     output = list()
-
+    cohorts = list()
     index_cols =
       c('patientid',
         'diagnosisdate',
         'metastasisdate',
         'advanceddate')
 
-    #### Cancer Cohort ====
     tictoc::tic('==> cohort query')
-    cohorts = list()
-    output$queries$Structured = cohort_query %>%
-      group_by(patientid) %>%
-      dbplyr::window_order(patientid, diagnosisdate) %>%
-      filter(row_number() == 1) %>%
-      ungroup
-    .cohort = cohort_query %>%
-      collect %>%
-      setNames(tolower(names(.)))
+    if(!custom_cohort_flag) {
+      cohort_type_levels  = sort(factor(
+        cohort_type,
+        levels = c('Structured', 'Curated', 'Manual Abstraction', 'Enriched')
+      ))
+      cohorttypes = list_cohorts(cohort, con=spmd_con('prod')) %>% pull(cohorttype)
+      if ('Structured' %in% cohorttypes &
+          'Structured' %in% cohort_type_levels ) {
+        cohort_base = 'Structured'
+      } else {
+        cohort_base = 'Curated'
+      }
 
-    if (nrow(.cohort) > 0)
-      cohorts$Structured = .cohort
+      #### Cancer Cohort ====
+      output$queries  = list()
+      for (cohort_type in cohort_type_levels) {
+        cohort.query = get_cohort(cohort, cohort_type, 'mdr', con = con)
+        output$queries[[trimws(cohort_type)]] = cohort.query
+        .cohort = cohort.query %>%
+          select(-c(cohorttype)) %>%
+          collect %>%
+          distinct %>%
+          mutate({
+            {
+              cohort_type
+            }
+          } := TRUE) %>%
+          setNames(tolower(names(.))) %>%
+          arrange(patientid, diagnosisdate) %>%
+          filter_first_patient_row()
+      }
 
-    cohort_query =
-      output$queries$Structured %>% select(patientid, diagnosisdate)
+      if (nrow(.cohort) > 0)
+        cohorts[[trimws(cohort_type)]] = .cohort
+
+      cohort_query = output$queries[[cohort_base]] %>% select(patientid, diagnosisdate)
+    } else {
+      output$queries$Structured = cohort %>%
+        group_by(patientid) %>%
+        dbplyr::window_order(patientid, diagnosisdate) %>%
+        filter(row_number() == 1) %>%
+        ungroup
+      .cohort = output$queries$Structured %>%
+        collect %>%
+        setNames(tolower(names(.)))
+
+      if (nrow(.cohort) > 0)
+        cohorts$Structured = .cohort
+
+      cohort_query =
+        output$queries$Structured %>% select(patientid, diagnosisdate)
+    }
 
     output$data$cancer =
       cohorts %>% reduce(left_join) %>% mutate_if(is.logical, ~ replace_na(., FALSE))
