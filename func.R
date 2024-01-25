@@ -655,7 +655,6 @@ build_all_encounters <-
 
 
 # Define our Table output for easy coding
-# Define our Table output for easy coding
 make_table <- function (df, ..., sort = c(all_categorical() ~ "frequency"), missing = 'ifany', add_overall = F){
   args = enquos(...)
   .label = ifelse(length(args)>0, as_label(args[[1]]), '')
@@ -666,7 +665,7 @@ make_table <- function (df, ..., sort = c(all_categorical() ~ "frequency"), miss
       ...,
       type = all_continuous() ~ "continuous2",
       statistic = all_continuous() ~ c(
-        "{N_nonmiss} ({style_percent(p)}%)",
+        "{N_nonmiss} ({p_nonmiss}%)",
         "{median} ({p25}, {p75})",
         "{mean} [{min}, {max}]"
       )) %>%
@@ -676,8 +675,8 @@ make_table <- function (df, ..., sort = c(all_categorical() ~ "frequency"), miss
     bold_labels()
   if(add_overall) gttable = gttable %>% add_overall()
   gttable %>%
-    as_gt() %>%
-    gt:::as.tags.gt_tbl() %>%
+    # as_gt() %>%
+    # gt:::as.tags.gt_tbl() %>%
     suppressWarnings()%>%
     suppressMessages()
 }
