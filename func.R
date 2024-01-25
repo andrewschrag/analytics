@@ -655,13 +655,30 @@ build_all_encounters <-
 
 
 # Define our Table output for easy coding
-make_table <- function (df, ..., sort = c(all_categorical() ~ "frequency"), missing = 'ifany'){
-  df %>% tbl_summary(missing = missing, sort = sort, ...) %>%
-    bold_labels() %>%
-    modify_header(label = "") %>% 
-    # as_gt() %>%
-    # gt:::as.tags.gt_tbl() %>%
-    suppressWarnings() %>%
+# Define our Table output for easy coding
+make_table <- function (df, ..., sort = c(all_categorical() ~ "frequency"), missing = 'ifany', add_overall = F){
+  args = enquos(...)
+  .label = ifelse(length(args)>0, as_label(args[[1]]), '')
+  gttable = df %>%
+    tbl_summary(
+      missing = missing,
+      sort = sort,
+      ...,
+      type = all_continuous() ~ "continuous2",
+      statistic = all_continuous() ~ c(
+        "{N_nonmiss} ({style_percent(p)}%)",
+        "{median} ({p25}, {p75})",
+        "{mean} [{min}, {max}]"
+      )) %>%
+    suppressMessages() %>%
+    modify_header(all_stat_cols() ~ "**{level}**, N={n} ({style_percent(p)}%)",
+                  label = .label) %>%
+    bold_labels()
+  if(add_overall) gttable = gttable %>% add_overall()
+  gttable %>%
+    as_gt() %>%
+    gt:::as.tags.gt_tbl() %>%
+    suppressWarnings()%>%
     suppressMessages()
 }
 
