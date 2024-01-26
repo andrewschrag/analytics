@@ -24,8 +24,38 @@ agelabels <<-
     '65-79',
     '80+')
 
+# Define our Table output for easy coding
+make_table <- function (df, 
+                        ..., 
+                        add_overall = F, 
+                        statistic = all_continuous() ~ c(
+                          "{N_nonmiss} ({p_nonmiss}%)",
+                          "{median} ({p25}, {p75})",
+                          "{mean} [{min}, {max}]"),
+                        sort = c(all_categorical() ~ "frequency"), 
+                        missing = 'ifany'){
+  args = enquos(...)
+  .label = ifelse(length(args)>0, as_label(args[[1]]), '')
+  gttable = df %>%
+    tbl_summary(
+      missing = missing,
+      sort = sort,
+      ...,
+      type = all_continuous() ~ "continuous2",
+      statistic = ) %>%
+    suppressMessages() %>%
+    modify_header(all_stat_cols() ~ "**{level}**, N={n} ({style_percent(p)}%)",
+                  label = .label) %>%
+    bold_labels()
+  if(add_overall) gttable = gttable %>% add_overall()
+  gttable %>%
+    # as_gt() %>%
+    # gt:::as.tags.gt_tbl() %>%
+    suppressWarnings()%>%
+    suppressMessages()
+}
 
-# Make table1
+# Make table1 **Deprecated**
 make_table1 <-
   function(df,
            cols,
@@ -654,32 +684,6 @@ build_all_encounters <-
   }
 
 
-# Define our Table output for easy coding
-make_table <- function (df, ..., sort = c(all_categorical() ~ "frequency"), missing = 'ifany', add_overall = F){
-  args = enquos(...)
-  .label = ifelse(length(args)>0, as_label(args[[1]]), '')
-  gttable = df %>%
-    tbl_summary(
-      missing = missing,
-      sort = sort,
-      ...,
-      type = all_continuous() ~ "continuous2",
-      statistic = all_continuous() ~ c(
-        "{N_nonmiss} ({p_nonmiss}%)",
-        "{median} ({p25}, {p75})",
-        "{mean} [{min}, {max}]"
-      )) %>%
-    suppressMessages() %>%
-    modify_header(all_stat_cols() ~ "**{level}**, N={n} ({style_percent(p)}%)",
-                  label = .label) %>%
-    bold_labels()
-  if(add_overall) gttable = gttable %>% add_overall()
-  gttable %>%
-    # as_gt() %>%
-    # gt:::as.tags.gt_tbl() %>%
-    suppressWarnings()%>%
-    suppressMessages()
-}
 
 
 
