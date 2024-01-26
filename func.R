@@ -42,7 +42,7 @@ make_table <- function (df,
       sort = sort,
       ...,
       type = all_continuous() ~ "continuous2",
-      statistic = ) %>%
+      statistic = statistic) %>%
     suppressMessages() %>%
     modify_header(all_stat_cols() ~ "**{level}**, N={n} ({style_percent(p)}%)",
                   label = .label) %>%
