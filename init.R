@@ -36,6 +36,12 @@ plot_margin <-
     pad = 4
   )
 
+if (!reticulate::condaenv_exists(here::here('renv/r-miniconda/envs/r-reticulate/'))) {
+  reticulate::install_miniconda(path = here::here('renv/r-miniconda/'))
+}
+reticulate::use_miniconda(here::here('renv/r-miniconda/envs/r-reticulate/bin/python'))
+reticulate::py_install('boto3')
+
 
 #This is the connection config
 rds_client = botor_client("rds", region_name = "us-west-2")
