@@ -28,11 +28,12 @@ pacman::p_load(
   'pdftools',
   'arrow',
   'odbc',
-  'paws'
+  'paws',
+  'reticulate'
 )
 
-if (!reticulate::condaenv_exists('~/.local/share/r-miniconda/envs/r-reticulate/')) {
-  reticulate::install_miniconda(path = '~/.local/share/r-miniconda/')
+if (!reticulate::condaenv_exists(here::here('renv/r-miniconda/envs/r-reticulate/'))) {
+  reticulate::install_miniconda(path = here::here('renv/r-miniconda/'))
 }
-reticulate::use_miniconda('~/.local/share/r-miniconda/envs/r-reticulate/bin/python')
+reticulate::use_miniconda(here::here('renv/r-miniconda/envs/r-reticulate/bin/python'))
 reticulate::py_install('boto3')
