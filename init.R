@@ -37,7 +37,6 @@ plot_margin <-
   )
 
 
-
 #This is the connection config
 rds_client = botor_client("rds", region_name = "us-west-2")
 host = host = 'spmd-prod.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com' #'spmd-prod-clone.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com'
