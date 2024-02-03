@@ -25,14 +25,14 @@ agelabels <<-
     '80+')
 
 # Define our Table output for easy coding
-make_table <- function (df, 
-                        ..., 
-                        add_overall = F, 
+make_table <- function (df,
+                        ...,
+                        add_overall = F,
                         statistic = all_continuous() ~ c(
                           "{N_nonmiss} ({p_nonmiss}%)",
                           "{median} ({p25}, {p75})",
                           "{mean} [{min}, {max}]"),
-                        sort = c(all_categorical() ~ "frequency"), 
+                        sort = c(all_categorical() ~ "frequency"),
                         missing = 'ifany'){
   args = enquos(...)
   .label = ifelse(length(args)>0, as_label(args[[1]]), '')
@@ -95,8 +95,8 @@ make_table1 <-
 ## Process Biomarker Calls
 process_call <- function(df, call_col = call) {
   .call_col <- enquo(call_col)
-  call.map <- tbl(spmd_con('prod'), in_schema('ca', 'map_biomarker_call')) %>% 
-      collect %>% 
+  call.map <- tbl(spmd_con('prod'), in_schema('ca', 'map_biomarker_call')) %>%
+      collect %>%
       mutate(call = tolower(call))
   df %>%
     mutate(call = ifelse(
@@ -554,7 +554,7 @@ find_dupe_cols <- function(df, summary = T) {
 
 
 refresh_cohort_counts <- function(recreate_mat_view = FALSE) {
-  spmd_write = syhelpr::spmd_con("clone", write = TRUE)
+  spmd_write = syhelpr::spmd_con("prod", write = TRUE)
   tictoc::tic('====>> run time')
   rlang::inform(as.character(syhelpr::timestamp()))
 
@@ -708,12 +708,12 @@ get_ads_deid <- function(cohort='lung', env = 'prod'){
 
 
 get_health_system_ads <- function(ads){
-  hs_data = tbl(spmd_con('prod'), in_schema('mdr', 'patient')) %>% 
-    filter(id %in% !!ads$patientid) %>% 
-    select(id, sourcename, suborg) %>% 
-    mutate(id = tolower(as.character(id))) %>% 
-    rename(patientid = id, health_system = sourcename) %>% 
-    collect %>% 
+  hs_data = tbl(spmd_con('prod'), in_schema('mdr', 'patient')) %>%
+    filter(id %in% !!ads$patientid) %>%
+    select(id, sourcename, suborg) %>%
+    mutate(id = tolower(as.character(id))) %>%
+    rename(patientid = id, health_system = sourcename) %>%
+    collect %>%
     distinct
   output = ads %>% left_join(hs_data, by = 'patientid')
   return(output)
@@ -721,18 +721,18 @@ get_health_system_ads <- function(ads){
 
 #' Unnest Embedded Dataframe in ADS
 #' Provides a list of columns available in each table, by cohort
-#' 
+#'
 #' @param df dataframe/tibble containing Analytical Dataset
 #' @param col name of column where dataframe is embedded
-#' 
+#'
 #' @examples
 #' unnest_ads(systemic_therapy)
 #'
-unnest_ads <- function(df, col){    
+unnest_ads <- function(df, col){
   .col = enquo(col)
   patient_col = intersect(c("patientId", "patientid", "patient_id", "patientID", "patients", "patient", "subjectid"), names(df))[1]
   patient_col = sym(patient_col)
-    
+
   df %>%
     select({{ patient_col }}, {{ .col }}) %>%
     filter(!is.na({{ .col }})) %>%
