@@ -39,7 +39,7 @@ plot_margin <-
 if (!reticulate::condaenv_exists(here::here('renv/r-miniconda/envs/r-reticulate/'))) {
   reticulate::install_miniconda(path = here::here('renv/r-miniconda/'))
 }
-reticulate::use_miniconda(here::here('renv/r-miniconda/envs/r-reticulate/bin/python'))
+#reticulate::use_miniconda(here::here('renv/r-miniconda/envs/r-reticulate/bin/python'))
 reticulate::py_install('boto3')
 
 
