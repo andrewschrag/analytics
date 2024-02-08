@@ -45,7 +45,7 @@ make_table <- function (df,
       ...
     ) %>%
     suppressMessages() %>%
-    modify_header(all_stat_cols() ~ "**{level}**, N={prettyNum(n, big.mark = ',')} ({style_percent(p)}%)",
+    modify_header(all_stat_cols() ~ "**{level}**<br>N = {prettyNum(n, big.mark = ',')} ({style_percent(p)}%)",
                   label = .label) %>%
     bold_labels()
   if(add_overall) gttable = gttable %>% add_overall()
