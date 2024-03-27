@@ -32,6 +32,7 @@ make_table <- function (df,
                           "{N_nonmiss} ({p_nonmiss}%)",
                           "{median} ({p25}, {p75})",
                           "{mean} [{min}, {max}]"),
+                        type = all_continuous() ~ "continuous2",
                         sort = c(all_categorical() ~ "frequency"),
                         missing = 'ifany'){
   args = enquos(...)
@@ -40,7 +41,7 @@ make_table <- function (df,
     tbl_summary(
       missing = missing,
       sort = sort,
-      type = all_continuous() ~ "continuous2",
+      type = type,
       statistic = statistic,
       ...
     ) %>%
