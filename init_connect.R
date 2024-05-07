@@ -10,16 +10,16 @@ pacman::p_load(
   table1,
   glue,
   janitor,
-  vroom,
-  tidyjson,
-  tidytext,
+  #vroom,
+  #tidyjson,
+  #tidytext,
   gt,
   gtsummary,
-  botor,
+  #botor,
   labelled,
-  httr,
-  jsonlite,
-  syrnapi,
+  #httr,
+  #jsonlite,
+  #syrnapi,
   tictoc
 )
 
