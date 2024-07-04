@@ -5,6 +5,7 @@ pacman::p_load(
   dtplyr,
   tidyverse,
   dbplyr,
+  DT,
   DBI,
   syhelpr,
   table1,
