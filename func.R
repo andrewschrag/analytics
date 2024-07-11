@@ -744,12 +744,12 @@ unnest_ads <- function(df, col){
 list_nested_cols <- function(df, include_node = FALSE){
   patient_col = intersect(c("patientId", "patientid", "patient_id", "patientID", "patients", "patient", "subjectid"), names(df))[1]
   patient_col = sym(patient_col)
-  list_cols = ads %>% select(where(is.list)) %>% colnames
+  list_cols = df %>% select(where(is.list)) %>% colnames
   unnest_list = list()
   for(col in list_cols){
       .col = sym(col)
       unnest_list[[col]] = df %>% 
-      select(patientid, {{ .col }})  %>% 
+      select({{patient_col}}, {{ .col }})  %>% 
       filter(!is.na({{ .col }})) %>% 
       head(0) %>% 
       unnest_ads({{ .col }}) %>%
