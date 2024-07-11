@@ -739,3 +739,23 @@ unnest_ads <- function(df, col){
     filter(!is.na({{ .col }})) %>%
     unnest({{ .col }})
 }
+
+
+list_ads_nested_cols <- function(ads, include_node = FALSE){
+    list_cols = ads %>% select(where(is.list)) %>% colnames
+    unnest_list = list()
+    for(col in list_cols){
+        .col = sym(col)
+        unnest_list[[col]] = ads %>% 
+          select(patientId, {{ .col }})  %>% 
+          filter(!is.na({{ .col }})) %>% 
+          head(0) %>% 
+          unnest_ads({{ .col }}) %>%
+          select(-patientId) %>% 
+          colnames
+    }
+    
+    output = unnest_list %>% unlist(use.names = FALSE)
+    if(include_node) output = c(output, list_cols)
+    return(output)
+}
