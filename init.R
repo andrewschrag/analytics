@@ -45,7 +45,7 @@ host = host = 'spmd-prod.cluster-czsq80p56jgd.us-west-2.rds.amazonaws.com' #'spm
 port = '5432'
 user = 'view'
 spmd <- DBI::dbConnect(
-  odbc::odbc(),
+  RPostgres::Postgres(),
   Driver = "postgresql",
   database = "spmd",
   servername = host,
