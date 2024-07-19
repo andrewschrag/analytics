@@ -46,14 +46,14 @@ port = '5432'
 user = 'view'
 spmd <- DBI::dbConnect(
   RPostgres::Postgres(),
-  Driver = "postgresql",
-  database = "spmd",
-  servername = host,
-  Port = port,
-  UID = user,
-  PWD = rds_client$generate_db_auth_token(host, port, user),
-  sslmode = "require",
-  MaxVarChar = 65568
+  #Driver = "postgresql",
+  #database = "spmd",
+  dbname = 'spmd', 
+  host = host,
+  port = port,
+  user = user,
+  password = rds_client$generate_db_auth_token(host, port, user),
+  sslmode = "require"
 )
 
 shared_root = 'https://raw.githubusercontent.com/andrewschrag/analytics/main'
