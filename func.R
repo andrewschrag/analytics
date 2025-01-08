@@ -25,18 +25,18 @@ agelabels <<-
     '80+')
 
 # Define our Table output for easy coding
-make_table <- function (df,
-                        ...,
-                        add_overall = F,
-                        statistic = all_continuous() ~ c(
-                          "{N_nonmiss} ({p_nonmiss}%)",
-                          "{median} ({p25}, {p75})",
-                          "{mean} [{min}, {max}]"),
-                        type = all_continuous() ~ "continuous2",
-                        sort = c(all_categorical() ~ "frequency"),
-                        missing = 'ifany'){
+# Conveneince wrapper for making table with gtsummary
+make_table <-  function (df,
+                         ...,
+                         add_overall = F,
+                         statistic = all_continuous() ~ c("{N_nonmiss} ({p_nonmiss}%)",
+                                                          "{median} ({p25}, {p75})",
+                                                          "{mean} [{min}, {max}]"),
+                         type = all_continuous() ~ "continuous2",
+                         sort = c(all_categorical() ~ "frequency"),
+                         missing = 'ifany') {
   args = enquos(...)
-  .label = ifelse(length(args)>0, as_label(args[[1]]), '')
+  .label = ifelse(length(args) > 1, glue::glue(as_label(args[[1]])), ' ')
   gttable = df %>%
     tbl_summary(
       missing = missing,
@@ -46,17 +46,19 @@ make_table <- function (df,
       ...
     ) %>%
     suppressMessages() %>%
-    modify_header(all_stat_cols() ~ "**{level}**<br>N = {prettyNum(n, big.mark = ',')} ({style_percent(p)}%)",
-                  label = .label) %>%
+    modify_header(
+      all_stat_cols() ~ "**{level}**<br>N = {prettyNum(n, big.mark = ',')} ({style_percent(p)}%)",
+      label = ' '
+    ) %>%
     bold_labels()
-  if(add_overall) gttable = gttable %>% add_overall()
+  if (add_overall)
+    gttable = gttable %>% add_overall()
   gttable %>%
     # as_gt() %>%
     # gt:::as.tags.gt_tbl() %>%
-    suppressWarnings()%>%
+    suppressWarnings() %>%
     suppressMessages()
 }
-
 # Make table1 **Deprecated**
 make_table1 <-
   function(df,
