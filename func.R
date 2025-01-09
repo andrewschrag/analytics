@@ -29,7 +29,7 @@ agelabels <<-
 make_table <-  function (df,
                          ...,
                          add_overall = F,
-                         statistic = all_continuous() ~ c("{N_nonmiss} ({p_nonmiss}%)",
+                         statistic = all_continuous() ~ c(#"{N_nonmiss} ({p_nonmiss}%)",
                                                           "{median} ({p25}, {p75})",
                                                           "{mean} [{min}, {max}]"),
                          type = all_continuous() ~ "continuous2",
