@@ -307,14 +307,12 @@ naaccr_med_search <- function(pattern) {
 
 
 
-
 attrition_table <-
   function(df,
            levels = NULL,
            labels = NULL,
-           html_output = T) {
-    attr.table <- tibble()
-
+           html_output = T,
+           by_org = T) {
     if (is.null(levels)) {
       levels <- names(df %>% select_if(is.logical))
     } else if (is.list(levels)) {
@@ -327,48 +325,31 @@ attrition_table <-
       labels <- c('Top of Funnel', levels)
       levels <- c('', levels)
     }
-
+    
+    
+    data = df
+    
     for (i in 1:length(labels)) {
-      if (i == 1) {
-        attr.table <- df %>%
-          summarise(cohort = labels[[i]],
-                    n = n_distinct(patientid))
+      if (i < 3) {
+        data <- data %>%
+          # filter(sourcename %in% org) %>%
+          mutate(!!sym(labels[[i]]) := !!sym(levels[[i]]))
       } else {
-        df <- df %>% filter(!!sym(levels[[i]]))
-        attr.table <-
-          bind_rows(attr.table,
-                    df %>%
-                      summarise(cohort = labels[[i]],
-                                n = n_distinct(patientid)))
+        data <- data %>% 
+          mutate(!!sym(labels[[i]]) := !!sym(levels[[i]]) & !!sym(levels[[i-1]]))
       }
     }
-
-    attr.table <- attr.table %>%
-      mutate(
-        n_excluded = lag(n, default = n[1]) - n,
-        percent_excluded =  ifelse(row_number() == 1, '-', as_percent(n_excluded / lag(n)))
-      )
-
-    if (html_output)
-      attr.table <- attr.table %>% sykable
-    return(attr.table)
+    
+    if(html_output){
+      if(by_org){
+        return(data %>% select(any_of(labels), sourcename) %>% make_table(sourcename, add_overall = T))
+      } else {
+        return(data %>% select(any_of(labels)) %>% make_table())
+      }
+    } else {
+      data %>% select(patientid, sourcename, any_of(labels))
+    }
   }
-
-
-clean_string_dates <- function(df, date_col) {
-  .date_col <- enquo(date_col)
-  .date_col_p <-
-    as.symbol(paste0(deparse(substitute(date_col)), '_p'))
-
-  df %>%
-    mutate(!!.date_col_p := ifelse(nchar(!!.date_col) < 8,!!.date_col, NA),!!.date_col := ymd(trimws(ifelse(
-      nchar(!!.date_col) == 8,!!.date_col, NA
-    )))) %>%
-    convert_dates %>%
-    impute_dates(keep_partial_date_field = TRUE)
-
-}
-
 
 filter_first_patient_row <- function(df, .group = NULL) {
   df %>% group_by(patientid) %>% filter(row_number() == 1) %>% ungroup
