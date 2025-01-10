@@ -32,7 +32,7 @@ make_table <-  function (df,
                          statistic = all_continuous() ~ c(#"{N_nonmiss} ({p_nonmiss}%)",
                                                           "{median} ({p25}, {p75})",
                                                           "{mean} [{min}, {max}]"),
-                         type =  type = list(
+                         type = list(
                            where(is.logical) ~ "categorical",
                            all_continuous() ~ "continuous2"
                          ),
