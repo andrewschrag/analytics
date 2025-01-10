@@ -750,3 +750,10 @@ list_nested_cols <- function(df, include_node = FALSE){
     if(include_node) output = c(output, list_cols)
     return(output)
 }
+
+
+search_ads_col <- function(regex){
+  ads %>% head(0) %>% 
+    select(matches(regex)) %>% 
+    colnames
+}
