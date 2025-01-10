@@ -32,7 +32,11 @@ make_table <-  function (df,
                          statistic = all_continuous() ~ c(#"{N_nonmiss} ({p_nonmiss}%)",
                                                           "{median} ({p25}, {p75})",
                                                           "{mean} [{min}, {max}]"),
-                         type = all_continuous() ~ "continuous2",
+                         type =  type = list(
+                           where(is.logical) ~ "categorical",
+                           all_continuous() ~ "continuous2"
+                         ),
+                         digits = list(all_categorical() ~ 0),
                          sort = c(all_categorical() ~ "frequency"),
                          missing = 'ifany') {
   args = enquos(...)
@@ -43,6 +47,7 @@ make_table <-  function (df,
       sort = sort,
       type = type,
       statistic = statistic,
+      digits = digits,
       ...
     ) %>%
     suppressMessages() %>%
