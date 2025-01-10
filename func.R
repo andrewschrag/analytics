@@ -24,6 +24,7 @@ agelabels <<-
     '65-79',
     '80+')
 
+
 # Define our Table output for easy coding
 # Conveneince wrapper for making table with gtsummary
 make_table <-  function (df,
