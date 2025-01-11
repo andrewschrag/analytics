@@ -102,9 +102,9 @@ make_table1 <-
 
 
 ## Process Biomarker Calls
-process_call <- function(df, call_col = call) {
+process_call <- function(df, call_col = call, spmd = spmd_con('prod', write = T)) {
   .call_col <- enquo(call_col)
-  call.map <- tbl(spmd_con('prod'), in_schema('ca', 'map_biomarker_call')) %>%
+  call.map <- tbl(spmd, in_schema('ca', 'map_biomarker_call')) %>%
       collect %>%
       mutate(call = tolower(call))
   df %>%
