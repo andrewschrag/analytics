@@ -52,11 +52,11 @@ make_table <-  function (df,
       ...
     ) %>%
     suppressMessages() %>%
-    modify_footnote(everything() ~ NA) %>%
     modify_header(
       all_stat_cols() ~ "**{level}**<br>N = {prettyNum(n, big.mark = ',')} ({style_percent(p)}%)",
       label = ' '
     ) %>%
+    modify_footnote(everything() ~ NA) %>%
     bold_labels()
   if (add_overall)
     gttable = gttable %>% add_overall()
