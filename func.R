@@ -319,7 +319,8 @@ attrition_table <-
            levels = NULL,
            labels = NULL,
            html_output = T,
-           by_org = T) {
+           by_org = T,
+           ...) {
     if (is.null(levels)) {
       levels <- names(df %>% select_if(is.logical))
     } else if (is.list(levels)) {
@@ -349,9 +350,9 @@ attrition_table <-
     
     if(html_output){
       if(by_org){
-        return(data %>% select(any_of(labels), sourcename) %>% make_table(sourcename, add_overall = T))
+        return(data %>% select(any_of(labels), sourcename) %>% make_table(sourcename, add_overall = T, ...))
       } else {
-        return(data %>% select(any_of(labels)) %>% make_table())
+        return(data %>% select(any_of(labels)) %>% make_table(...))
       }
     } else {
       data %>% select(patientid, sourcename, any_of(labels))
