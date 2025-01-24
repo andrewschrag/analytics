@@ -109,11 +109,11 @@ process_call <- function(df, call_col = call, spmd = spmd_con('prod', write = T)
       collect %>%
       mutate(call = tolower(call))
   df %>%
-    mutate(call = ifelse(
-      tolower(biomarkertype) != "wild type",
-      tolower(call),
-      "negative"
-    )) %>%
+    #mutate(call = ifelse(
+    #  tolower(biomarkertype) != "wild type",
+    #  tolower(call),
+    #  "negative"
+    #)) %>%
     left_join(call.map, by = "call") %>%
     mutate(call = call_simple
     #factor(
