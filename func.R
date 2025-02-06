@@ -1129,7 +1129,7 @@ get_dd_elements <- function(cohort = NULL){
 
 .get_ads_data <- function(cohort, variables){
   .cohort = tolower(cohort)
-  .variables = c(strsplit(variables, split = ', {0,1}'))[[1]]
+  .variables = variables #c(strsplit(variables, split = ', {0,1}'))[[1]]
   
   ads_type_map = list('enriched'   = syhelpr::list_ads(type='enriched'),
                       'essentials' = syhelpr::list_ads(type='essentials'))
