@@ -753,6 +753,397 @@ list_nested_cols <- function(df, include_node = FALSE){
     return(output)
 }
 
+## ADS + DD functions ----
+
+## get_next_element_id
+get_next_element_id <- function(){
+  last_id = tbl(spmd, dbplyr::in_schema('ca', 'ads_data_dictionary')) %>% 
+    filter(element_id == max(element_id, na.rm = TRUE)) %>% 
+    distinct(element_id) %>% 
+    collect %>% 
+    pull(element_id)
+  
+  return(last_id+1)
+}
+
+get_next_unique_element_id <- function(elementid){
+  last_id = tbl(spmd, dbplyr::in_schema('ca', 'ads_data_dictionary')) %>% 
+    filter(element_id == elementid) %>% 
+    group_by(element_id) %>% 
+    filter(unique_element_id == max(unique_element_id, na.rm = T)) %>% 
+    collect %>% 
+    distinct(unique_element_id) %>% 
+    pull(unique_element_id)
+  
+  return(last_id+1)
+}
+
+get_unique_element_ids <- function(element_id){
+  get_ads_dd(element_id = element_id) %>% 
+    distinct(unique_element_id) %>% 
+    collect %>% 
+    pull(unique_element_id)
+}
+
+get_latest_record_ids <- function(element_id){
+  get_ads_dd(element_id = element_id, version = 'recent') %>% 
+    group_by(element_id, cohort) %>% 
+    filter(record_id == max(record_id, na.rm = T)) %>% 
+    collect %>% 
+    pull(record_id)
+}
+
+# Get ADS Data Dictionary from CA schema
+get_ads_dd <- function(..., version = NULL, collect = TRUE) {
+  args = list(...)
+  query = tbl(spmd, dbplyr::in_schema('ca', 'ads_data_dictionary'))
+  
+  if(!is.null(args)){
+    for(arg in names(args)){
+      variable = as.symbol(arg)
+      value = args[[arg]]
+      
+      if(!is.null(value)){
+        query = query %>% filter({{ variable }} %in% c(value))
+      }
+    }
+  }
+  
+  if (!is.null(version)){
+    if(tolower(version) == 'recent'){
+      query = query %>% 
+        collect %>% 
+        group_by(element_id, cohort) %>% 
+        filter(record_id == max(record_id, na.rm = T)) %>% 
+        ungroup
+    } else if (tolower(version) == 'latest'){
+      query = query %>% 
+      filter(tolower(status) == 'production') %>% 
+      group_by(element_id, cohort) %>% 
+      filter(record_id == max(record_id)) %>% 
+      ungroup
+    } else if (tolower(version) == 'planned'){
+      query = query %>% 
+        filter(!is.na(planned_version)) 
+    } else {
+      query = query %>% filter(version == version)
+    }
+  }
+  
+  if(collect){
+    return(query %>% collect)
+  } else{
+    return(query)
+  }
+}
+
+
+# Get ADS Planned Version
+get_ads_dd_planned <- function(dd = NULL, ...){
+  if(is.null(dd)){
+    df = get_ads_dd(
+      ...,
+      version = 'planned')
+  } else {
+    df = dd %>% 
+      {if(!is.null(status)) filter(., status == status) else .} %>%  
+      {if(!is.null(cohort)) filter(., cohort == cohort) else .}
+  }
+  
+  dd = df %>%  
+    filter(!is.na(planned_version)) %>% 
+    group_by(element_id, cohort) %>% 
+    arrange(desc(record_id)) %>% 
+    slice(1) %>% 
+    ungroup 
+
+  return(dd)
+}
+
+
+## Get Data Dict Comment ----
+get_ads_dd_comment <- function(...){
+  args = list(...)
+  query = tbl(spmd, in_schema('ca', 'ads_data_dictionary_comment'))
+  
+  if(!is.null(args)){
+    for(arg in names(args)){
+      variable = as.symbol(arg)
+      value = args[[arg]]
+      
+      query = query %>% filter({{ variable }} == value)
+    }
+  }
+  return(query %>% 
+           arrange(desc(comment_dts)) %>% 
+           collect)
+}
+
+
+dd_unique_elements <- function(dd){
+  .ads_options = ads_options[ads_options != 'tumor agnostic']
+  all_cohorts = paste0(ifelse(nchar(.ads_options)>3, str_to_title(.ads_options), toupper(.ads_options)), collapse = ', ') 
+  
+  output = dd %>% 
+    group_by(
+      unique_element_id,
+      cohort
+    ) %>% 
+    arrange(desc(record_id)) %>% 
+    slice(1) %>% 
+    ungroup %>% 
+    group_by(unique_element_id) %>% 
+    mutate(
+      cohorts_label = paste0(ifelse(nchar(cohort)>3, str_to_title(cohort), toupper(cohort)), collapse = ', '),
+      cohorts = list(cohort),
+      record_ids = list(record_id),
+      element_ids = list(element_id)) %>% 
+    mutate(
+      cohorts_label = ifelse(cohorts_label == all_cohorts, 'Tumor Agnostic', cohorts_label)
+    ) %>% 
+    group_by(cohorts) %>% 
+    slice(1) %>% 
+    ungroup %>% 
+    distinct(unique_element_id, cohorts_label, record_ids, element_ids, cohorts) %>% 
+    arrange(desc(nchar(cohorts)))
+  
+  output %>%
+    rowwise %>%
+    filter(length(record_ids)>1) %>%
+    arrange(desc(length(record_ids))) %>%
+    bind_rows(
+      output %>%
+        rowwise %>%
+        filter(length(record_ids)==1) %>%
+        arrange(cohorts_label)
+    ) %>% 
+    ungroup
+}
+
+
+
+# pivot_cohorts <- function(df){
+#   df %>%
+#     pivot_longer(all_of(unname(list_ads('enriched')))) %>%
+#     filter(value) %>%
+#     group_by(across(-c(name, value))) %>%
+#     mutate(cohorts = paste0(name, collapse = '; ')) %>%
+#     ungroup %>%
+#     select(-c(name, value)) %>%
+#     distinct
+# }
+
+
+# Get NAACCR item definition using SEER API
+get_naaccr_item_def <- function(item){
+  # SEER API key
+  seer_api_key <- "39c41a32868d4570ae97c3112ad4459e"
+  version = "latest"
+  
+  request <- paste0("https://api.seer.cancer.gov/rest/naaccr/xml/22/item/", item)
+  response = httr::GET(request, httr::add_headers("X-SEERAPI-Key" = seer_api_key))
+  httr::stop_for_status(response)
+  output = fromJSON_na(httr::content(response, as="text", encoding = 'UTF-8')) %>% 
+    map_df(.f = ~.x)
+  
+  return(output[1,]$documentation)
+}
+
+# Create a Histogram
+syhistogram <- function (.data, col_name, color = 1, ...)
+{
+  col_quo = sym(col_name)
+  check_for_column(.data,!!col_quo)
+  plot_title = col_name
+  na_cnt = .data %>% filter(is.na(!!col_quo)) %>% summarise(cnt = n()) %>%
+    pull(cnt)
+  if (na_cnt > 0)
+    plot_title = paste0(plot_title, " (", na_cnt, " NA values)")
+  x = plotly::plot_ly(
+    x = .data %>% pull(!!col_quo),
+    type = "histogram",
+    marker = list(color = sypalette$hex[color]),
+    ...
+  ) %>%
+    plotly::layout(title = plot_title)
+  return(x)
+}
+
+
+# Compute Missing
+compute_missing <- function(df, cols) {
+  df %>%
+    mutate_at(vars(cols),
+              ~ if_else(
+                is.na(.) |
+                  grepl('unknown|missing', ., ignore.case = T),
+                FALSE,
+                TRUE
+              ))
+}
+
+
+# Compute variable completeness
+compute_completeness <- function(df, cols, process = T) {
+  if (process) {
+    df %>%
+      select(cohort, all_of(cols)) %>%
+      compute_missing(names(.)[names(.) != 'cohort']) %>%
+      make_table(cohort)
+  } else {
+    df %>%
+      select(cohort, all_of(cols)) %>%
+      make_table(cohort)
+  }
+}
+
+
+# Create Groupings for SVI 
+group_svi <- function(df, svi_col = 'svi'){
+  svi_col = as.symbol(svi_col)
+  df %>% 
+    mutate(
+      {{ svi_col }} := case_when(
+        {{ svi_col }} < 0.299 ~ 'Quartile 1 (<0.299)',
+        {{ svi_col }} >= 0.299 & {{ svi_col }} < 0.448 ~ 'Quartile 2 (>=0.299 and <0.448)',
+        {{ svi_col }} >= 0.448 & {{ svi_col }} < 0.604 ~ 'Quartile 3 (>=0.448 and <0.604)',
+        {{ svi_col }} >= 0.604 ~ 'Quartile 4 (>=0.604)',
+        TRUE ~ NA)
+    )
+}
+
+
+# Conveneince wrapper for making table with gtsummary
+make_table <-  function (df,
+                         ...,
+                         add_overall = F,
+                         statistic = all_continuous() ~ c("{N_nonmiss} ({p_nonmiss}%)",
+                                                          "{median} ({p25}, {p75})",
+                                                          "{mean} [{min}, {max}]"),
+                         type = all_continuous() ~ "continuous2",
+                         sort = c(all_categorical() ~ "frequency"),
+                         missing = 'ifany') {
+  args = enquos(...)
+  .label = ifelse(length(args) > 1, glue::glue(as_label(args[[1]])), ' ')
+  gttable = df %>%
+    tbl_summary(
+      missing = missing,
+      sort = sort,
+      type = type,
+      statistic = statistic,
+      ...
+    ) %>%
+    suppressMessages() %>%
+    modify_header(
+      all_stat_cols() ~ "**{level}**<br>N = {prettyNum(n, big.mark = ',')} ({style_percent(p)}%)",
+      label = ' '
+    ) %>%
+    bold_labels()
+  if (add_overall)
+    gttable = gttable %>% add_overall()
+  gttable %>%
+    # as_gt() %>%
+    # gt:::as.tags.gt_tbl() %>%
+    suppressWarnings() %>%
+    suppressMessages()
+}
+
+
+ads_unique_values <- function(ads){
+  output = list()
+  vars = ads %>% colnames
+  
+  for(var in vars){
+    .var = as.symbol(var)
+    
+    var_data <- ads %>% 
+      distinct(values = {{ .var }})  %>% 
+      filter(!is.na(.[[1]])) %>% 
+      suppressMessages(readr::type_convert())
+    
+    var_type = var_data[['values']] %>% class
+    
+    if(var_type == 'Date'){
+      output[[var]] <- tibble(values = 'YYYY-MM-DD')
+    #} #else if(grepl('_year$', var)){
+      #output[[var]] <- tibble(values = 'YYYY')
+    } else if(var_type == 'numeric') {
+      output[[var]] <- var_data %>% head(5)
+    } else {
+      output[[var]] <- var_data %>% arrange(.[[1]])
+    }
+  }
+  
+  return(output)
+}
+
+
+kms_api_call <- function(api_root, params = list()){
+  output = NULL
+  tryCatch({
+    response = httr::GET(api_root, query = params)
+    httr::stop_for_status(response)
+    output = RJSONIO::fromJSON(httr::content(response, as="text", encoding = 'UTF-8'), warn = F)$data %>% map_df(.f = ~.x)
+    ## ...
+  }, http_error=function(e) {
+    output = NULL
+  })
+  
+  return(output)
+}
+
+
+syapi_call <- function(path, params = list(), api_key = Sys.getenv("CONNECT_API_KEY")){
+  api_root = 'https://analytics.syapse.com/'
+  
+  output = NULL
+  tryCatch({
+    response = httr::GET(api_root,
+                         path = paste0('syapi/', path),
+                         query = params,
+                         httr::add_headers(Authorization = paste0("Key ", api_key)))
+    httr::stop_for_status(response)
+    output = RJSONIO::fromJSON(httr::content(response, as="text", encoding = 'UTF-8'), warn = F) %>% 
+      map_df(.f = ~.x)
+    ## ...
+  }, http_error=function(e) {
+    output = NULL
+  })
+  
+  return(output)
+}
+
+
+.get_ads_dd<- function(cohort = NULL, ...){
+  syapi_call(path = 'get_data_dict', list(cohort = cohort, ...))
+}
+
+get_dd_elements <- function(cohort = NULL){
+  syapi_call(path = 'get_elements', list(cohort = cohort))
+}
+
+# .get_ads_data <- function(cohort = NULL, variables){
+#   syapi_call(path = 'get_ads_data', list(cohort = cohort, variables = variables))
+# }
+
+
+.get_ads_data <- function(cohort, variables){
+  .cohort = tolower(cohort)
+  .variables = c(strsplit(variables, split = ', {0,1}'))[[1]]
+  
+  ads_type_map = list('enriched'   = syhelpr::list_ads(type='enriched'),
+                      'essentials' = syhelpr::list_ads(type='essentials'))
+  
+  if(.cohort %in% ads_type_map$enriched){
+    ads_table_name = glue::glue('ads_{.cohort}_enriched')
+  } else {
+    ads_table_name = glue::glue('ads_{.cohort}_essentials')
+  }
+  
+  tbl(syhelpr::spmd_con('prod', write = T), dbplyr::in_schema('ca', ads_table_name)) %>%
+    select(patientid, sourcename, suborg, any_of(c(.variables))) %>% 
+    collect
+}
 
 search_ads_col <- function(regex){
   ads %>% head(0) %>% 
