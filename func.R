@@ -314,50 +314,100 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <-
-  function(df,
-           levels = NULL,
-           labels = NULL,
-           html_output = T,
-           by_org = T,
-           ...) {
-    if (is.null(levels)) {
-      levels <- names(df %>% select_if(is.logical))
-    } else if (is.list(levels)) {
-      if (names(levels)[1] != '')
-        levels <- c(list('Top of Funnel'), levels)
-      labels <- paste(unlist(levels))
-      levels <- names(levels)
+attrition_table <- function(ads, filters, strat = F) {
+  patients <- list()
+  patients$all <- ads$patientid
+  patients$included <- ads$patientid
+  table <- tibble()
+
+  if (!strat) {
+    for (filt in 1:length(filters)) {
+      filt_pats = ads %>%
+        filter(patientid %in% patients$included, !!as.symbol(filters[[filt]])) %>%
+        select(patientid, sourcename)
+
+      table <- bind_rows(
+        table,
+        tibble(
+          'Criteria' = names(filters[filt]),
+          'Total Included' = filt_pats %>%
+            count_patients() %>%
+            .$patients
+        )
+      )
+
+      patients$included <- filt_pats$patientid
     }
-    if (is.null(labels) | length(labels) < length(levels)) {
-      labels <- c('Top of Funnel', levels)
-      levels <- c('', levels)
-    }
-    
-    
-    data = df
-    
-    for (i in 1:length(labels)) {
-      if (i < 3) {
-        data <- data %>%
-          # filter(sourcename %in% org) %>%
-          mutate(!!sym(labels[[i]]) := !!sym(levels[[i]]))
-      } else {
-        data <- data %>% 
-          mutate(!!sym(labels[[i]]) := !!sym(levels[[i]]) & !!sym(levels[[i-1]]))
+  } else {
+    strat_tables <- list()
+    for (hs in c(sort(unique(ads$sourcename)), 'Total Included')) {
+      strat_tables[[hs]] <- table
+      for (filt in 1:length(filters)) {
+        filt_pats <- ads %>%
+          filter(patientid %in% patients$included,!!as.symbol(filters[[filt]])) %>%
+          select(patientid, sourcename)
+
+        patients$included <- filt_pats$patientid
+
+        .label =  ifelse(hs == 'Total Included', hs, str_to_upper(hs))
+        strat_tables[[hs]] <-  bind_rows(
+          strat_tables[[hs]],
+          tibble(
+            'Criteria' = names(filters[filt]),
+            !!as.symbol(.label) := filt_pats %>%
+              { `if`(hs != 'Total Included', filter(., sourcename == hs), .) } %>%
+              count_patients() %>%
+              .$patients
+          )
+        )
       }
+      patients$included <- patients$all
     }
-    
-    if(html_output){
-      if(by_org){
-        return(data %>% select(any_of(labels), sourcename) %>% make_table(sourcename, add_overall = T, ...))
-      } else {
-        return(data %>% select(any_of(labels)) %>% make_table(...))
-      }
-    } else {
-      data %>% select(patientid, sourcename, any_of(labels))
-    }
+
+    table <- strat_tables %>% reduce(left_join)
   }
+
+  table %>%
+    mutate(
+      `N Excluded` = lag(`Total Included`, default = `Total Included`[1]) - `Total Included`,
+      `% Excluded` =  ifelse(row_number() == 1, '-', as_percent(`N Excluded` / lag(`Total Included`)))
+    ) %>%
+    gt(rowname_col = 'Criteria') %>%
+    fmt_number(decimals = 0,
+               sep_mark = ",") %>%
+    tab_options(
+      table.width = '75%',
+      table_body.border.top.color = '#000',
+      table_body.border.top.style = "solid",
+      table_body.border.top.width = "3px",
+      table.border.top.style = 'hidden',
+      table.border.bottom.color = '#fff',
+      table.font.size = px(16),
+      column_labels.border.bottom.color = '#f5f5f5',
+      column_labels.border.bottom.style = "solid",
+      column_labels.border.bottom.width = "1px",
+      column_labels.font.weight = '600',
+      data_row.padding = px(35),
+      column_labels.padding = px(35),
+      heading.padding = px(35),
+      table.additional_css = '.gt_table { margin-top: 1em !important; }'
+    ) %>%
+    tab_style(style = list(
+      cell_text(weight = "500"),
+      cell_borders(sides = c("right"), style = 'hidden')
+    ),
+    locations = cells_stub()) %>%
+    tab_style(style = cell_text(size = '1.2rem'),
+              locations = cells_body()) %>%
+    tab_style(
+      style = cell_text(size = '1.2rem', weight = '600'),
+      locations = cells_body(columns = `Total Included`)
+    ) %>%
+    opt_horizontal_padding(scale = 3) %>%
+    opt_css(css = ".gt_table { margin-top: -3rem; }") %>%
+    return()
+}
+
 
 filter_first_patient_row <- function(df, .group = NULL) {
   df %>% group_by(patientid) %>% filter(row_number() == 1) %>% ungroup
