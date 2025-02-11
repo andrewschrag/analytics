@@ -4,7 +4,7 @@
 get_cohort <-
   function(cohort,
            cohort_type = 'Curated',
-           con = spmd_con(),
+           con = spmd_con('prod', write = T),
            schema = 'mdr',
            cols = c()) {
     tbl(con, in_schema("cohorts", "cohort")) %>%
@@ -483,7 +483,7 @@ build_cohort <- build_custom_cohort <- build_structured_cohort <-
            followup = FALSE,
            age_breaks = c(0, 50, 64, 74, Inf),
            age_labels = c('<50', '50-64', '65-74', '75+'),
-           con = spmd_con('prod'),
+           con = spmd_con('prod', write = T),
            schema = 'mdr',
            write_table = F,
            ...) {
