@@ -34,7 +34,7 @@ make_table <-  function (df,
                                                           "{median} ({p25}, {p75})",
                                                           "{mean} [{min}, {max}]"),
                          type = list(
-                           where(is.logical) ~ "categorical",
+                           where(is.logical) ~ "dichotomous",
                            all_continuous() ~ "continuous2"
                          ),
                          digits = list(all_categorical() ~ 0),
@@ -66,6 +66,8 @@ make_table <-  function (df,
     suppressWarnings() %>%
     suppressMessages()
 }
+
+
 # Make table1 **Deprecated**
 make_table1 <-
   function(df,
