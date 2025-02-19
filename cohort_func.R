@@ -3,7 +3,7 @@
 ## Get Cohort Base Data ====
 get_cohort <-
   function(cohort,
-           cohort_type = 'Curated',
+           cohort_type = 'Essentials',
            con = spmd_con('prod', write = T),
            schema = 'mdr',
            cols = c()) {
@@ -479,7 +479,7 @@ get_biomarker <- function (gene = NULL,
 
 build_cohort <- build_custom_cohort <- build_structured_cohort <-
   function(cohort,
-           cohort_type = c('Structured', 'Curated', 'Enriched'),
+           cohort_type = c('Structured', 'Essentials', 'Enriched'),
            followup = FALSE,
            age_breaks = c(0, 50, 64, 74, Inf),
            age_labels = c('<50', '50-64', '65-74', '75+'),
@@ -500,14 +500,14 @@ build_cohort <- build_custom_cohort <- build_structured_cohort <-
     if(!custom_cohort_flag) {
       cohort_type_levels  = sort(factor(
         cohort_type,
-        levels = c('Structured', 'Curated', 'Manual Abstraction', 'Enriched')
+        levels = c('Structured', 'Essentials', 'Manual Abstraction', 'Enriched')
       ))
       cohorttypes = list_cohorts(cohort, con=spmd_con('prod')) %>% pull(cohorttype)
       if ('Structured' %in% cohorttypes &
           'Structured' %in% cohort_type_levels ) {
         cohort_base = 'Structured'
       } else {
-        cohort_base = 'Curated'
+        cohort_base = 'Essentials'
       }
 
       #### Cancer Cohort ====
