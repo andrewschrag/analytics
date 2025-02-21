@@ -316,13 +316,13 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <- function(ads, filters, strat = F) {
+attrition_table <- function(ads, filters, strat = NULL) {
   patients <- list()
   patients$all <- ads$patientid
   patients$included <- ads$patientid
   table <- tibble()
 
-  if (!strat) {
+  if (strat %>% length < 1) {
     for (filt in 1:length(filters)) {
       filt_pats = ads %>%
         filter(patientid %in% patients$included, !!as.symbol(filters[[filt]])) %>%
@@ -342,12 +342,16 @@ attrition_table <- function(ads, filters, strat = F) {
     }
   } else {
     strat_tables <- list()
-    for (hs in c(sort(unique(ads$sourcename)), 'Total Included')) {
+    strat_var = sym(strat)
+
+    unique(ads[[strat]]) %>% print
+
+    for (hs in c(sort(unique(ads[[strat]])), 'Total Included')) {
       strat_tables[[hs]] <- table
       for (filt in 1:length(filters)) {
         filt_pats <- ads %>%
           filter(patientid %in% patients$included,!!as.symbol(filters[[filt]])) %>%
-          select(patientid, sourcename)
+          select(patientid, sourcename, {{strat_var}})
 
         patients$included <- filt_pats$patientid
 
@@ -357,7 +361,7 @@ attrition_table <- function(ads, filters, strat = F) {
           tibble(
             'Criteria' = names(filters[filt]),
             !!as.symbol(.label) := filt_pats %>%
-              { `if`(hs != 'Total Included', filter(., sourcename == hs), .) } %>%
+              { `if`(hs != 'Total Included', filter(., {{strat_var}} == hs), .) } %>%
               count_patients() %>%
               .$patients
           )
@@ -372,7 +376,7 @@ attrition_table <- function(ads, filters, strat = F) {
   table %>%
     mutate(
       `N Excluded` = lag(`Total Included`, default = `Total Included`[1]) - `Total Included`,
-      `% Excluded` =  ifelse(row_number() == 1, '-', as_percent(`N Excluded` / lag(`Total Included`)))
+      `% Excluded` =  ifelse(row_number() == 1, '-', as_percent(`N Excluded` / lag(`Total Included`), round = 1))
     ) %>%
     gt(rowname_col = 'Criteria') %>%
     fmt_number(decimals = 0,
@@ -409,6 +413,7 @@ attrition_table <- function(ads, filters, strat = F) {
     opt_css(css = ".gt_table { margin-top: -3rem; }") %>%
     return()
 }
+
 
 
 filter_first_patient_row <- function(df, .group = NULL) {
