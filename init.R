@@ -9,7 +9,7 @@ pacman::p_load(
   data.table,
   DBI,
   syhelpr,
-  table1,
+  RPostgres,
   glue,
   janitor,
   vroom,
