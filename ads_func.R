@@ -195,3 +195,15 @@ get_ads_data <- function(cohort, variables, spmd = spmd_con()){
     select(patientid, sourcename, suborg, any_of(c(variables))) %>% 
     collect
 }
+
+    
+unnest_ads_json <- function(ads, col){
+  .col = as.symbol(col)
+  
+  ads %>% 
+    mutate({{.col}} := 
+           parallel::mclapply({{.col}}, 
+                              function(x){ syhelpr::fromJSON_na(x) %>% as.data.frame() },
+                              mc.cores = 12, mc.cleanup = TRUE)) %>% 
+    tidyr::unnest({{.col}}) 
+}
