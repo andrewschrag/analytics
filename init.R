@@ -1,14 +1,13 @@
 ## Initialize Environment
 ## Load Packages ====
 pacman::p_load(
-  plotly,
+  data.table,
   dtplyr,
   tidyverse,
   dbplyr,
-  DT,
-  data.table,
-  DBI,
   syhelpr,
+  DT,
+  DBI,
   RPostgres,
   glue,
   janitor,
@@ -17,6 +16,7 @@ pacman::p_load(
   tidytext,
   gt,
   gtsummary,
+  plotly,
   botor,
   labelled,
   httr,
