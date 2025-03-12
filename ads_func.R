@@ -178,9 +178,9 @@ get_dd_elements <- function(cohort = NULL){
 # }
 
 
-.get_ads_data <- function(cohort, variables, spmd = spmd_con()){
+get_ads_data <- function(cohort, variables, spmd = spmd_con()){
   .cohort = tolower(cohort)
-  .variables = c(strsplit(variables, split = ', {0,1}'))[[1]]
+  #.variables = c(strsplit(variables, split = ', {0,1}'))[[1]]
   
   ads_type_map = list('enriched'   = syhelpr::list_ads(type='enriched'),
                       'essentials' = syhelpr::list_ads(type='essentials'))
@@ -192,6 +192,6 @@ get_dd_elements <- function(cohort = NULL){
   }
   
   tbl(spmd, dbplyr::in_schema('ca', ads_table_name)) %>%
-    select(patientid, sourcename, suborg, any_of(c(.variables))) %>% 
+    select(patientid, sourcename, suborg, any_of(c(variables))) %>% 
     collect
 }
