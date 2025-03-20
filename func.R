@@ -344,7 +344,7 @@ attrition_table <- function(ads, filters, strat = NULL) {
     strat_tables <- list()
     strat_var = sym(strat)
 
-    unique(ads[[strat]]) %>% print
+    #unique(ads[[strat]]) %>% print
 
     for (hs in c(sort(unique(ads[[strat]])), 'Total Included')) {
       strat_tables[[hs]] <- table
