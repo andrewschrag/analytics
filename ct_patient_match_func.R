@@ -636,26 +636,3 @@ write_analytical_dataset <- function(data, dataset_name, type) {
 not_all_na <- function(x)
   any(!is.na(x))
 
-
-make_table <-
-  function (df,
-            ...,
-            sort = c(all_categorical() ~ "frequency"),
-            missing = 'ifany',
-            add_overall = F) {
-    gttable = df %>%
-      tbl_summary(
-        missing = missing,
-        sort = sort,
-        ...,
-        type = all_continuous() ~ "continuous2",
-        statistic = all_continuous() ~ c("{N_nonmiss}",
-                                         "{median} ({p25}, {p75})",
-                                         "{min}, {max}")
-      ) %>%
-      bold_labels()
-    if (add_overall)
-      gttable = gttable %>% add_overall()
-    gttable %>%
-      as_gt()
-  }
