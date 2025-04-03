@@ -24,6 +24,7 @@ agelabels <<-
     '65-79',
     '80+')
 
+
 format_year <- function(x) style_number(as.numeric(x), digits = 0, big.mark = '') %>% suppressWarnings
 
 # Define our Table output for easy coding
