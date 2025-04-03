@@ -24,6 +24,7 @@ agelabels <<-
     '65-79',
     '80+')
 
+format_year <- function(x) style_number(as.numeric(x), digits = 0, big.mark = '') %>% suppressWarnings
 
 # Define our Table output for easy coding
 # Conveneince wrapper for making table with gtsummary
@@ -37,8 +38,9 @@ make_table <-  function (df,
                            where(is.logical) ~ "dichotomous",
                            all_continuous() ~ "continuous2"
                          ),
-                         digits = list(all_categorical() ~ 0),
-                         sort = c(all_categorical() ~ "frequency"),
+                         digits =  list(all_categorical() ~ 0, ends_with('year') ~ list(format_year)),
+                         #sort = c(all_categorical() ~ "frequency"),  
+                         sort = c(all_categorical() ~ "alphanumeric"),
                          missing = 'ifany') {
   args = enquos(...)
   .label = ifelse(length(args) > 1, glue::glue(as_label(args[[1]])), ' ')
