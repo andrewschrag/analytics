@@ -71,6 +71,7 @@ make_table <-  function (df,
 }
 
 
+
 # Make table1 **Deprecated**
 make_table1 <-
   function(df,
