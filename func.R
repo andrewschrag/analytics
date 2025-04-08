@@ -39,12 +39,15 @@ make_table <-  function (df,
                            where(is.logical) ~ "dichotomous",
                            all_continuous() ~ "continuous2"
                          ),
-                         digits =  list(all_categorical() ~ 0, ends_with('year') ~ list(format_year)),
+                         digits =  list(
+                           all_categorical() ~ 0,
+                           ends_with('year') ~ list(format_year)),
                          #sort = c(all_categorical() ~ "frequency"),  
                          sort = c(all_categorical() ~ "alphanumeric"),
                          missing = 'ifany') {
   args = enquos(...)
   .label = ifelse(length(args) > 1, glue::glue(as_label(args[[1]])), ' ')
+  
   gttable = df %>%
     tbl_summary(
       missing = missing,
@@ -61,8 +64,10 @@ make_table <-  function (df,
     ) %>%
     modify_footnote(everything() ~ NA) %>%
     bold_labels()
+  
   if (add_overall)
     gttable = gttable %>% add_overall()
+  
   gttable %>%
     # as_gt() %>%
     # gt:::as.tags.gt_tbl() %>%
@@ -1075,39 +1080,7 @@ group_svi <- function(df, svi_col = 'svi'){
 
 
 # Conveneince wrapper for making table with gtsummary
-make_table <-  function (df,
-                         ...,
-                         add_overall = F,
-                         statistic = all_continuous() ~ c("{N_nonmiss} ({p_nonmiss}%)",
-                                                          "{median} ({p25}, {p75})",
-                                                          "{mean} [{min}, {max}]"),
-                         type = all_continuous() ~ "continuous2",
-                         sort = c(all_categorical() ~ "frequency"),
-                         missing = 'ifany') {
-  args = enquos(...)
-  .label = ifelse(length(args) > 1, glue::glue(as_label(args[[1]])), ' ')
-  gttable = df %>%
-    tbl_summary(
-      missing = missing,
-      sort = sort,
-      type = type,
-      statistic = statistic,
-      ...
-    ) %>%
-    suppressMessages() %>%
-    modify_header(
-      all_stat_cols() ~ "**{level}**<br>N = {prettyNum(n, big.mark = ',')} ({style_percent(p)}%)",
-      label = ' '
-    ) %>%
-    bold_labels()
-  if (add_overall)
-    gttable = gttable %>% add_overall()
-  gttable %>%
-    # as_gt() %>%
-    # gt:::as.tags.gt_tbl() %>%
-    suppressWarnings() %>%
-    suppressMessages()
-}
+
 
 
 ads_unique_values <- function(ads){
