@@ -341,7 +341,7 @@ attrition_table <- function(data, filters, strat = NULL) {
         table,
         tibble(
           'Criteria' = names(filters[filt]),
-          'Total Included' = filt_pats %>%
+          'Patients' = filt_pats %>%
             count_patients() %>%
             .$patients
         )
@@ -355,7 +355,7 @@ attrition_table <- function(data, filters, strat = NULL) {
     
     #unique(data[[strat]]) %>% print
     
-    for (hs in c(sort(unique(data[[strat]])), 'Total Included')) {
+    for (hs in c(sort(unique(data[[strat]])), 'Patients')) {
       strat_tables[[hs]] <- table
       for (filt in 1:length(filters)) {
         filt_pats <- data %>%
@@ -364,13 +364,13 @@ attrition_table <- function(data, filters, strat = NULL) {
         
         patients$included <- filt_pats$patientid
         
-        .label =  ifelse(hs == 'Total Included', hs, str_to_upper(hs))
+        .label =  ifelse(hs == 'Patients', hs, str_to_upper(hs))
         strat_tables[[hs]] <-  bind_rows(
           strat_tables[[hs]],
           tibble(
             'Criteria' = names(filters[filt]),
             !!as.symbol(.label) := filt_pats %>%
-              { `if`(hs != 'Total Included', filter(., {{strat_var}} == hs), .) } %>%
+              { `if`(hs != 'Patients', filter(., {{strat_var}} == hs), .) } %>%
               count_patients() %>%
               .$patients
           )
