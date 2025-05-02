@@ -325,18 +325,18 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <- function(ads, filters, strat = NULL) {
+attrition_table <- function(data, filters, strat = NULL) {
   patients <- list()
-  patients$all <- ads$patientid
-  patients$included <- ads$patientid
+  patients$all <- data$patientid
+  patients$included <- data$patientid
   table <- tibble()
-
+  
   if (strat %>% length < 1) {
     for (filt in 1:length(filters)) {
-      filt_pats = ads %>%
+      filt_pats = data %>%
         filter(patientid %in% patients$included, !!as.symbol(filters[[filt]])) %>%
         select(patientid, sourcename)
-
+      
       table <- bind_rows(
         table,
         tibble(
@@ -346,24 +346,24 @@ attrition_table <- function(ads, filters, strat = NULL) {
             .$patients
         )
       )
-
+      
       patients$included <- filt_pats$patientid
     }
   } else {
     strat_tables <- list()
     strat_var = sym(strat)
-
-    #unique(ads[[strat]]) %>% print
-
-    for (hs in c(sort(unique(ads[[strat]])), 'Total Included')) {
+    
+    #unique(data[[strat]]) %>% print
+    
+    for (hs in c(sort(unique(data[[strat]])), 'Total Included')) {
       strat_tables[[hs]] <- table
       for (filt in 1:length(filters)) {
-        filt_pats <- ads %>%
+        filt_pats <- data %>%
           filter(patientid %in% patients$included,!!as.symbol(filters[[filt]])) %>%
           select(patientid, sourcename, {{strat_var}})
-
+        
         patients$included <- filt_pats$patientid
-
+        
         .label =  ifelse(hs == 'Total Included', hs, str_to_upper(hs))
         strat_tables[[hs]] <-  bind_rows(
           strat_tables[[hs]],
@@ -378,18 +378,20 @@ attrition_table <- function(ads, filters, strat = NULL) {
       }
       patients$included <- patients$all
     }
-
+    
     table <- strat_tables %>% reduce(left_join)
   }
-
-  table %>%
+  
+  table %>% 
     mutate(
-      `N Excluded` = lag(`Total Included`, default = `Total Included`[1]) - `Total Included`,
-      `% Excluded` =  ifelse(row_number() == 1, '-', as_percent(`N Excluded` / lag(`Total Included`), round = 1))
+      `Included %` =  ifelse(row_number() == 1, '-', as_percent(`Patients` / lag(Patients), 1))
+      ,`Excluded` = lag(Patients, default = Patients[1]) - Patients
     ) %>%
-    gt(rowname_col = 'Criteria') %>%
-    fmt_number(decimals = 0,
-               sep_mark = ",") %>%
+    gt(rowname_col = 'Criteria') %>% 
+    fmt_number(
+      decimals = 0,
+      sep_mark = ","
+    ) %>% 
     tab_options(
       table.width = '75%',
       table_body.border.top.color = '#000',
@@ -404,22 +406,21 @@ attrition_table <- function(ads, filters, strat = NULL) {
       column_labels.font.weight = '600',
       data_row.padding = px(35),
       column_labels.padding = px(35),
-      heading.padding = px(35),
-      table.additional_css = '.gt_table { margin-top: 1em !important; }'
-    ) %>%
-    tab_style(style = list(
-      cell_text(weight = "500"),
-      cell_borders(sides = c("right"), style = 'hidden')
-    ),
-    locations = cells_stub()) %>%
-    tab_style(style = cell_text(size = '1.2rem'),
-              locations = cells_body()) %>%
+      heading.padding = px(35)
+    ) %>% 
+    tab_style(
+      style = list(cell_text(weight = "500"), cell_borders(sides = c("right"), style = 'hidden')),
+      locations = cells_stub()
+    ) %>% 
+    tab_style(
+      style = cell_text(size = '1.2rem'),
+      locations = cells_body()
+    ) %>% 
     tab_style(
       style = cell_text(size = '1.2rem', weight = '600'),
-      locations = cells_body(columns = `Total Included`)
-    ) %>%
+      locations = cells_body(columns = Patients)
+    ) %>% 
     opt_horizontal_padding(scale = 3) %>%
-    opt_css(css = ".gt_table { margin-top: -3rem; }") %>%
     return()
 }
 
