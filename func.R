@@ -326,7 +326,7 @@ naaccr_med_search <- function(pattern) {
 
 
 attrition_table <- function(data, filters, strat = NULL) {
-  patients <- list()
+  patients <- list() 
   patients$all <- data$patientid
   patients$included <- data$patientid
   table <- tibble()
