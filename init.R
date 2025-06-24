@@ -1,6 +1,6 @@
 ## Initialize Environment
 reticulate::use_condaenv('/var/lib/rstudio-server/rstudio-users/aschrag/envs/r-miniconda/')
-reticulate::py_require("boto3")
+#reticulate::py_require("boto3")
 
 ## Load Packages ====
 pacman::p_load(
