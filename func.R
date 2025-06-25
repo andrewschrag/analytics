@@ -26,6 +26,12 @@ agelabels <<-
 
 
 format_year <- function(x) style_number(as.numeric(x), digits = 0, big.mark = '') %>% suppressWarnings
+convert_dates <- function (df, regex = "(^date_of_|_dt$|dts$|^dob$|date$)", ...) 
+{
+  if (length(list(...)$key) > 0) 
+    regex = list(...)$key
+  df %>% mutate_at(vars(matches(regex)), list(~lubridate::date(.)))
+}
 
 # Define our Table output for easy coding
 # Conveneince wrapper for making table with gtsummary
