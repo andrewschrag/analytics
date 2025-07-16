@@ -391,7 +391,7 @@ attrition_table <- function(data, filters, strat = NULL) {
   table %>% 
     mutate(
       `Included(%)` =  ifelse(row_number() == 1, '-', as_percent(`Patients` / lag(Patients), 1))
-      ,`Excluded` = lag(Patients, default = Patients[1]) - Patients
+      ,`Excluded(n)` = lag(Patients, default = Patients[1]) - Patients
     ) %>%
     gt(rowname_col = 'Criteria') %>% 
     fmt_number(
