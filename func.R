@@ -399,7 +399,7 @@ attrition_table <- function(data, filters, strat = NULL) {
       sep_mark = ","
     ) %>% 
     tab_options(
-      table.width = '80%',
+      table.width = '85%',
       table_body.border.top.color = '#000',
       table_body.border.top.style = "solid",
       table_body.border.top.width = "3px",
