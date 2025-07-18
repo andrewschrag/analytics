@@ -1258,5 +1258,5 @@ get_emr_access <- function(.data, cancer_type_regex, emr_access_vector = emr_acc
 # Map patientid to deid patientid ----
 map_deid_patient <- function(.data){
   .data %>%
-    mutate(patientId = purrr::map_chr(patientid, syhelpr::deid_convert_spmd))
+    mutate(patientid_deid = purrr::map_chr(patientid, syhelpr::deid_convert_spmd))
 }
