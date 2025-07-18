@@ -1193,68 +1193,6 @@ search_ads_col <- function(regex){
 }
 
 
-    # EMR access ----
-get_emr_access <- function(.data, cancer_type_regex, emr_access_vector = emr_access_site){
-  
-  # Class of case definition for prioritization
-  # https://apps.naaccr.org/data-dictionary/data-dictionary/version=24/data-item-view/item-number=610/
-  class_of_case_priority <- c(14, 12, 10, 22, 20, 13, 11, 21, 0, 34:37, 40:42, 30:33, 43, 38, 49, 99)
-  
-  # Ascension site facility map
-  # Most disagreement was a result of facilities changing emr facilities and resulting in an updated site name. Some may have been due to move from suborgs
-  # We will take the most recent event crf to inform the accurate site_name.
-  # This is only necessary for Ascension Michigan, Illinois, and Wisconsin since their are multiple site-names tied to a single suborg
-  ascension_site_facility_map <- tbl(spmd_con("clone"), in_schema("ca", "ascension_oc_site_facility_map")) %>% collect()
-  
-  .data %>%
-    distinct(patientid, sourcename, suborg) %>%
-    left_join(get_registry(.data,
-                           cancer_type = cancer_type_regex,
-                           spmd = spmd,
-                           c("reportingfacility",
-                             "classofcase")) %>%
-                left_join(ascension_site_facility_map %>%
-                            filter(suborg != "ILLINOIS" |
-                                     (suborg == "ILLINOIS" &
-                                        reportingfacility %in% c("0006431613", #Alexian Brothers
-                                                                 "0000000145", #Alexian Brothers
-                                                                 "0006431926", #Saint Alexius
-                                                                 "0000000155", #Saint Alexius
-                                                                 "0006431070", #Saint Joseph Chicago
-                                                                 "0000006065"))) %>% #Saint Joseph Chicago
-                            select(reportingfacility, site_name),
-                          by = "reportingfacility") %>%
-                distinct(patientid, site_name, classofcase),
-              by = "patientid") %>%
-    mutate(site_name = case_when(sourcename == "advent" & suborg == "Advent Central Florida Division - North" ~ "advent-advent central florida division-north",
-                                 sourcename == "advent" & suborg == "Advent Central Florida Division - South" ~ "advent-advent central florida division-south",
-                                 sourcename == "advent" & suborg == "Advent Great Lakes" ~ "advent-advent great lakes-cerner",
-                                 sourcename == "advent" & suborg == "Advent Kansas" ~ "advent-advent kansas-shawnee mission",
-                                 suborg == "aah-il" ~ "aurora-aah-il",
-                                 suborg == "aah-wi" ~ "aurora-aah-wi",
-                                 sourcename == "bayhealth" ~ "bayhealth-bayhealth",
-                                 sourcename == "mlh" ~ "mlh-main line health",
-                                 TRUE ~ site_name),
-           emr_access = if_else(site_name %in% emr_access_vector, TRUE, FALSE, FALSE),
-           classofcase = as.numeric(classofcase)) %>%
-    add_sorting(classofcase, by = "custom", sort_vector = class_of_case_priority) %>%
-    arrange(
-      desc(emr_access),
-      # Cole made the below up. Work with the CTRs to determine the best ordering, and perhaps 
-      # use a spreadsheet to communicate (with a googlesheets4::read_sheet in data-raw)
-      desc(!is.na(site_name)),
-      desc(site_name == 'ascension-illinois-aurora'),
-      desc(site_name == 'ascension-illinois-epic'),
-      desc(site_name == 'ascension-illinois-cerner'),
-      desc(site_name == 'advent-advent central florida division-south'),
-      desc(site_name == 'advent-advent central florida division-north'),
-      desc(site_name == 'ascension-illinois-meditech'), # per Sheryl
-      classofcase
-    ) %>% 
-    slice_head(by = patientid) %>%
-    distinct(patientid, sourcename, suborg, site_name, emr_access)
-}
-
 # Map patientid to deid patientid ----
 map_deid_patient <- function(.data){
   .data %>%
