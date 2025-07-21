@@ -38,9 +38,11 @@ convert_dates <- function (df, regex = "(^date_of_|_dt$|dts$|^dob$|date$)", ...)
 make_table <-  function (df,
                          ...,
                          add_overall = F,
-                         statistic = all_continuous() ~ c(#"{N_nonmiss} ({p_nonmiss}%)",
-                                                          "{median} ({p25}, {p75})",
-                                                          "{mean} [{min}, {max}]"),
+                         statistic = list(
+                           all_continuous() ~ c(#"{N_nonmiss} ({p_nonmiss}%)",
+                             "{median} ({p25}, {p75})",
+                             "{mean} [{min}, {max}]")),
+                           all_categorical() ~ c("{N} ({p})")),
                          type = list(
                            where(is.logical) ~ "dichotomous",
                            all_continuous() ~ "continuous2"
