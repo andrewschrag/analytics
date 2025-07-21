@@ -60,7 +60,7 @@ make_table <-  function (df,
     .sort = c(all_categorical() ~ "alphanumeric")
   } else {
     .sort = sort
-  }
+  } 
   
   gttable = df %>%
     tbl_summary(
