@@ -54,9 +54,9 @@ make_table <-  function (df,
   args = enquos(...)
   .label = ifelse(length(args) > 1, glue::glue(as_label(args[[1]])), ' ')
 
-  if(sort in c('freq', 'frequency') | is.null(sort)){
+  if(sort %in% c('freq', 'frequency') | is.null(sort)){
     .sort = c(all_categorical() ~ "frequency")
-  } else if (sort in c('alpha', 'alphanumeric')) {
+  } else if (sort %in% c('alpha', 'alphanumeric')) {
     .sort = c(all_categorical() ~ "alphanumeric")
   } else {
     .sort = sort
