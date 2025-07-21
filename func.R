@@ -52,7 +52,8 @@ make_table <-  function (df,
                          ),
                          digits =  list(
                            all_categorical() ~ 0,
-                           ends_with('year') ~ list(format_year)),
+                           ends_with('year') ~ list(format_year)
+                         ),
                          sort = 'freq',  
                          missing = 'ifany') {
   args = enquos(...)
