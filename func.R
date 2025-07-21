@@ -48,16 +48,24 @@ make_table <-  function (df,
                          digits =  list(
                            all_categorical() ~ 0,
                            ends_with('year') ~ list(format_year)),
-                         #sort = c(all_categorical() ~ "frequency"),  
-                         sort = c(all_categorical() ~ "alphanumeric"),
+                         sort = 'freq',  
+                         #sort = c(all_categorical() ~ "alphanumeric"),
                          missing = 'ifany') {
   args = enquos(...)
   .label = ifelse(length(args) > 1, glue::glue(as_label(args[[1]])), ' ')
+
+  if(sort in c('freq', 'frequency') | is.null(sort)){
+    .sort = c(all_categorical() ~ "frequency")
+  } else if (sort in c('alpha', 'alphanumeric')) {
+    .sort = c(all_categorical() ~ "alphanumeric")
+  } else {
+    .sort = sort
+  }
   
   gttable = df %>%
     tbl_summary(
       missing = missing,
-      sort = sort,
+      sort = .sort,
       type = type,
       statistic = statistic,
       digits = digits,
