@@ -44,7 +44,7 @@ make_table <-  function (df,
                              "{median} ({p25}, {p75})",
                              "{mean} [{min}, {max}]"
                            ),
-                           all_categorical() ~ c("{n} ({p})")
+                           all_categorical() ~ c("{n} ({p}%)")
                          ),
                          type = list(
                            where(is.logical) ~ "dichotomous",
