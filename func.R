@@ -86,7 +86,7 @@ make_table <-  function (df,
     bold_labels() 
   
   if (add_overall)
-    gttable = gttable %>% add_overall(last) %>% modify_footnote(c(all_stat_cols()) ~ NA) 
+    gttable = gttable %>% add_overall(last=last) %>% modify_footnote(c(all_stat_cols()) ~ NA) 
   
   gttable %>%
     # as_gt() %>%
