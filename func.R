@@ -55,7 +55,8 @@ make_table <-  function (df,
                            ends_with('year') ~ list(format_year)
                          ),
                          sort = 'freq',  
-                         missing = 'ifany') {
+                         missing = 'ifany',
+                         last = TRUE) {
   args = enquos(...)
   .label = ifelse(length(args) > 1, glue::glue(as_label(args[[1]])), ' ')
 
@@ -85,7 +86,7 @@ make_table <-  function (df,
     bold_labels() 
   
   if (add_overall)
-    gttable = gttable %>% add_overall(...) %>% modify_footnote(c(all_stat_cols()) ~ NA) 
+    gttable = gttable %>% add_overall(last) %>% modify_footnote(c(all_stat_cols()) ~ NA) 
   
   gttable %>%
     # as_gt() %>%
