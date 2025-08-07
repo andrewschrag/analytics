@@ -133,6 +133,7 @@ make_table1 <-
 
 
 
+
 ## Process Biomarker Calls
 process_call <- function(df, call_col = call, spmd = spmd_con('prod', write = T)) {
   .call_col <- enquo(call_col)
@@ -442,6 +443,12 @@ attrition_table <- function(data, filters, strat = NULL) {
     ) %>% 
     opt_horizontal_padding(scale = 3) %>%
     return()
+}
+
+
+## filter_study_pop with attrrition columns
+filter_study_pop <- function(.data, cols){
+  .data %>% filter_at(vars(all_of(cols)), all_vars(.==TRUE))
 }
 
 
