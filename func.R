@@ -1282,3 +1282,512 @@ map_deid_patient <- function(.data){
   .data %>%
     mutate(patientid_deid = purrr::map_chr(patientid, syhelpr::deid_convert_spmd))
 }
+
+
+
+    #' Timestamp
+#'
+#' Return a timestamp in appropriate timezone. Useful for printing timstap statuses in function
+#'
+#' @param timezone string. Defaults to Pacific 'America/Los_Angeles'
+#' @param time_only bool. Controls output format. TRUE gives only time, while FALSE reutnrs date and time. Defaults to TRUE
+#'
+#' @return a tibble with dates converted to YYYY-MM-DD format
+#' @export
+#'
+timestamp <-
+  function(timezone = 'America/Los_Angeles',
+           time_only = TRUE) {
+    ts <- lubridate::with_tz(lubridate::now(tzone = 'GMT'), tzone = timezone)
+    if (time_only) {
+      ts <- hms::round_hms(hms::as_hms(ts), 2)
+    }
+    return(ts)
+  }
+
+#' Syapse Shared Path
+#'
+#' File Path to Syapse CA Shared Directory
+#' `/var/lib/rstudio-server/rstudio-users/syapse-shared`
+#' @export
+#'
+syapse_shared_path <-
+  "/var/lib/rstudio-server/rstudio-users/syapse-shared"
+
+#' Not All NA
+#'
+#' Function for removing columns that contain all `NA` values
+#'
+#' @examples
+#' df %>% select_if(not_all_na)
+#'
+#' @export
+#'
+not_all_na <- function(x) any(!is.na(x))
+
+#' Check for Dupes
+#'
+#' Checks for instances where a patient is represented by multiple rows
+#'
+#' @param df a dataframe containing patient data that is intended to be 1 row per patient
+#'
+#' @return tibble of records with multiple rows per patient
+#'
+#' @export
+#'
+check_for_dupes <- function(df, pat_col = patientid) {
+  pat_col = enquo(pat_col)
+  df <- df %>%
+    group_by(!!pat_col) %>%
+    filter(n() > 1) %>%
+    ungroup %>%
+    arrange(!!pat_col)
+  
+  if (length(df) == 0) {
+    print("==== No Duplicates Found ====")
+  } else {
+    return(df)
+  }
+}
+
+#' Syapse Color Palette
+#'
+#' A Selection of colors consistent with Syapse branding
+#'
+#' @export
+#'
+sypalette <- tibble::tribble(
+  ~ hex,
+  ~ rgb,
+  '#0050B3',
+  paste0(col2rgb('#0050B3', alpha = F), collapse = ', '),
+  '#36cfc9',
+  paste0(col2rgb('#36cfc9', alpha = F), collapse = ', '),
+  '#bae637',
+  paste0(col2rgb('#bae637', alpha = F), collapse = ', '),
+  '#acd533',
+  paste0(col2rgb('#acd533', alpha = F), collapse = ', '),
+  '#ffec3d',
+  paste0(col2rgb('#ffec3d', alpha = F), collapse = ', '),
+  '#ffa940',
+  paste0(col2rgb('#ffa940', alpha = F), collapse = ', '),
+  '#ff7a45',
+  paste0(col2rgb('#ff7a45', alpha = F), collapse = ', '),
+  '#9254de',
+  paste0(col2rgb('#9254de', alpha = F), collapse = ', '),
+  '#597ef7',
+  paste0(col2rgb('#597ef7', alpha = F), collapse = ', '),
+  '#40a9ff',
+  paste0(col2rgb('#40a9ff', alpha = F), collapse = ', '),
+  '#161cff',
+  paste0(col2rgb('#161cff', alpha = F), collapse = ', ')
+) %>% as.list
+
+
+#' Syapse Theme Blue
+#' @export
+theme_blue <- '#0050b3'
+
+#' Syapse Color Palette Ramp
+#'
+#' A function for imputing color palettes of N length using the sypalette colors
+#'
+#' @examples 
+#' sypalette_ramp(n)
+#' @export
+#'
+sypalette_ramp <- colorRampPalette(sypalette$hex)
+
+#' Day Difference
+#'
+#' Difference in days between two times
+#'
+#' @examples
+#' day_difference(as.Date("2020-05-30"),as.Date("2020-06-01"))
+#' 
+#' @return numeric
+#'
+#' @export
+#'
+day_difference <- function(time1,time2) {
+  return(as.double(difftime(time2,time1,units="days")))
+}
+
+#' As percent
+#'
+#' Format numeric as a percent
+#' 
+#' @param prop_ a numeric vector
+#' @param round integer indicating the number of decimal places to be used.
+#'
+#' @examples
+#' as_percent(0.9)
+#' 
+#' @return character vector
+#'
+#' @export
+#'
+as_percent <- function(prop_,round=0) {
+  paste0(round(prop_*100,round),'%')
+}
+
+#' tbl condition
+#'
+#' Output a message if a table condition is met
+#' 
+#' @param .data a data frame
+#' @param condition a condition statement to be evaluated on .data (e.g. !is.na(subjectid))
+#' @param message a message to be delivered. Note that you can access the number of rows where the 
+#' condition is met using '{n}' (uses glue::glue())
+#' @param level c("message","warning","error")
+#' 
+#' @examples
+#' tibble(x=c(1,2,3,NA_integer_)) %>% tbl_condition(is.na(x),'{n} row(s) are missing column x')
+#'
+#' @export
+#'
+tbl_condition <- function(.data,condition,message,level='message') {
+  condition = enquo(condition)
+  
+  n = nrow(.data %>% filter(!!condition))
+  if(n>0) {
+    if(level == 'message') {
+      inform(paste('Info:',glue(message)))
+    } else if(level == 'warning') {
+      warn(glue(message))
+    } else if(level == 'error') {
+      abort(glue(message))
+    } else {
+      abort('tbl_condition() level must be one of "message", "warning", or "error".')
+    }
+  }
+}
+
+#' Check for column 
+#'
+#' Confirm a column exists, and if applicable, whether it is the correct type. Returns the unedited data frame.
+#' 
+#' @param .data a data frame
+#' @param .col a variable
+#' @param .class character vector of class of the variable. If a vector, make sure the class is one of the values
+#' @param return_df a logical. If FALSE, return NULL (for performance)
+#' 
+#' @return a data frame, if return_df = TRUE, or NULL
+#' 
+#' @examples 
+#' # Both checks pass so the original tibble is returned
+#' tibble::tibble(x=1,y="a") %>% check_for_column(x,.class="numeric") %>% 
+#'   check_for_column(y,.class=c("numeric","character"))
+#'
+#' @export
+#'
+check_for_column <- function(.data,.col,.class=NULL,return_df=TRUE) {
+  .col = enquo(.col)
+  .vars = NULL
+  if(inherits(.data,'tbl_lazy')) {
+    .vars = sapply(.data %>% head %>% collect,class)
+  } else {
+    .vars = sapply(.data,class)
+  }
+  
+  if(as_label(.col) %in% names(.vars)) {
+    if(!is.null(.class)) {
+      if(!.vars[[as_label(.col)]] %in% .class) {
+        abort(glue("{as_label(.col)} must be of class {paste(.class,collapse=' or ')}"))
+      }
+    }
+  } else {
+    abort(glue("Can't find column {as_label(.col)} in data frame"))
+  }
+  
+  if(return_df) {
+    return(.data)
+  }
+}
+
+#' base_class
+#'
+#' Get the base class of an object
+#'
+#' @param x an object
+#' 
+#' @examples 
+#' class(tibble::tibble())
+#' base_class(tibble::tibble())
+#' 
+#' @return a character vector
+#' 
+#' @export
+base_class <- function(x) {
+  tail(class(x),n=1)
+}
+
+#' remove_na
+#'
+#' Remove na values from a vector
+#'
+#' @param x a vector
+#' 
+#' @examples 
+#' remove_na(c(1,2,NA_integer_))
+#' 
+#' @return a character vector
+#' 
+#' @export
+remove_na <- function(x) {
+  return(x[!is.na(x)])
+}
+
+#' Confirm unique
+#'
+#' Confirm a column is unique
+#' 
+#' @param .data a data frame
+#' @param .col a variable
+#' @param allow_na a logical
+#' @param return_df a logical. If FALSE, return NULL (for performance)
+#' @param error_msg a glue-able character vector
+#' 
+#' @return a data frame, if return_df = TRUE, or NULL
+#' 
+#' @examples 
+#' # Both checks pass so the original tibble is returned
+#' tibble::tibble(x=c(1,2),y=c("a","a")) %>% confirm_unique(x) 
+#' tibble::tibble(x=c(1,2),y=c("a","a")) %>% confirm_unique(y) # fails 
+#' tibble::tibble(x=c(1,2),y=c("a","a")) %>% confirm_unique(z) # fails
+#' tibble::tibble(x=c(1,2),y=c("a",NA_character_)) %>% confirm_unique(y) # passes 
+#' tibble::tibble(x=c(1,2),y=c("a",NA_character_)) %>% confirm_unique(y,allow_na=F) # fails 
+#' tibble::tibble(x=c(1,2),y=c("a","a")) %>% group_by(x) %>% confirm_unique(y) # fails 
+#'
+#' @export
+#'
+confirm_unique <- function(.data,.col,allow_na=TRUE,return_df=TRUE,
+                           error_msg='{as_label(.col)} must be unique.') {
+  .data = .data %>% ungroup()
+  .col = enquo(.col)
+  check_for_column(.data,!!.col,return_df=FALSE)
+  
+  any_dupes = .data %>% 
+    count(!!.col) %>% 
+    filter(!is.na(!!.col)) %>% 
+    summarise(any(n>1,na.rm=T)) %>% 
+    pull
+  
+  if(any_dupes) {
+    abort(glue('confirm_unique: {as_label(.col)} must be unique.'))
+  }
+  
+  if(!allow_na) {
+    any_na = .data %>% summarise(any(is.na(!!.col),na.rm=T)) %>% pull
+    if(any_na) {
+      abort(glue('confirm_unique: {as_label(.col)} must not have NA values.'))
+    }
+  }
+  
+  if(return_df) {
+    return(.data)
+  } else {
+    return(NULL)
+  }
+  
+}
+
+#' Cross join
+#'
+#' @param x a data frame
+#' @param y a data frame
+#' @param copy a logical. See [mutate-joins][dplyr::mutate-joins]
+#' @param suffix a named character vector. See [mutate-joins][dplyr::mutate-joins]
+#' @param ... See [mutate-joins][dplyr::mutate-joins]
+#' @param keep a logical. See [mutate-joins][dplyr::mutate-joins]
+#' 
+#' @return a data frame
+#' 
+#' @examples tibble(x=1) %>% cross_join(tibble(y=1))
+#'
+#' @export
+#'
+cross_join <- function(x, y, copy = FALSE, suffix = c(".x", ".y"), ..., keep = FALSE) {
+  .colbase = "tmp"
+  i=0
+  
+  .col = paste0(.colbase,i)
+  while(.col %in% colnames(x) | .col %in% colnames(y)) {
+    i = i+1
+    .col = paste0(.colbase,i)
+  }
+  
+  full_join(
+    x %>% mutate(!!.col := 1), 
+    y %>% mutate(!!.col := 1), 
+    by=.col, 
+    copy = copy, 
+    suffix = suffix, 
+    #..., 
+    keep = FALSE
+  ) %>% select(-!!.col)
+}
+  
+#' Expect No Error
+#' 
+#' Per documentation of expect_error(regexp), "If NA, asserts that there should be no errors."
+#' 
+expect_no_error <- function(object) {
+  do.call(expect_error,list(object=object,regexp=NA))
+}
+
+#' Invert named character vector
+#' 
+#' @export
+invert_named_vector <- function(y) setNames(names(y), y)
+
+
+#' Convert Empty String
+#' 
+#' Convert empty strings ("") to NA
+#'
+#' @param .data data frame, tibble, or lazy tibble 
+#' @param column character column in .data
+#' @param to character string to convert instances of "" to, defaults to NA_character_
+#'
+#' @return data frame, tibble, or lazy tibble with the value "" in `column` mapped to the value `to`
+#' @export
+#'
+#' @examples
+#' example <- as_tibble(list(strings = c("hello", "world", "", NA_character_)))
+#' example %>% convert_empty_string(strings)
+#' example %>% convert_empty_string(strings, to = "I was empty")
+convert_empty_string <- function(.data, column, to = NA_character_) {
+  column <- enquo(column)
+  .data %>% 
+    check_for_column(!!column, .class = "character") %>%
+    mutate(!!column := if_else(!!column == "", 
+                               to, 
+                               !!column, 
+                               !!column))
+}
+  
+#' Data source prioritization for combining data from OpenClinica and Registry
+#'
+#' @param .data Input data-frame containing patient information from multiple sources. The `sourceschema` variable must be present in the 
+#' data-frame in order to apply the prioritization logic.
+#'
+#' @return
+#' The input data-frame is returned prioritizing abstracted information from OpenClinica over registry data for each patient record. 
+#' 
+#' @examples
+#' example_multi_source_data <- tribble(~patientid, ~mets_flag, ~mets_date, ~sourceschema,
+#' "1", "Yes", "2022-01-16", "ma",
+#' "1", "Yes", NA_character_, "registry",
+#' "2", "Yes", NA_character_, "registry",
+#' "2", "No", NA_character_, "ma",
+#' "3", "Yes", "2023-05-05", "ma",
+#' "3", "No", NA_character_, "other")
+#' 
+#' example_multi_source_data %>% prioritize_source()
+prioritize_source <- function(.data) {
+  .data %>% 
+    # MA > registry > all others
+    mutate(source_ranking = case_when(sourceschema == "ma" ~ 1,
+                                      grepl("registry", sourceschema) ~ 2,
+                                      TRUE ~ 3)) %>% 
+    group_by(patientid) %>% 
+    filter(source_ranking == min(source_ranking, na.rm = TRUE)) %>% 
+    ungroup() %>% 
+    select(-source_ranking)
+}
+
+
+#' Join data-frames and replace missing values with NAs
+#'
+#' Full join one data frame to another and replace missing values in column with na_fill 
+#' Intended for filling NAs "at the site of definition" of ADS variables as opposed to at the end when all 
+#' data frames are joined together. Both `.data` and `ads` must have patientid.
+#' 
+#' @param .data Input data-frame, typically containing a subset of patientids from `ads`.
+#' @param ads Input data-frame to be used for the full_join() that contains all the patientids for the cohort of interest.
+#' @param column Column names from `.data` that have NA values that need to be replaced during the full_join().
+#' @param na_fill String for replacing the NA values, defaults to "Unknown".
+#'
+#' @return Data-frame containing all the patientids from `ads`. Additionally, `na_fill` values are used to replace the NAs introduced   
+#' in the `column` variables during the full_join() between `.data` and `ads`.
+#' 
+#' @examples
+#' example_ads <- tribble(~patientid, ~diagnosis_date,
+#' "id1", "2023-04-21",
+#' "id2", "2022-10-03",
+#' "id3", "2024-01-16",
+#' "id4", "2023-03-17",
+#' "id5", "2022-02-26",
+#' "id6", "2020-08-23")
+#' 
+#' example_df <- tribble(~patientid, ~recurrence_flag, ~mets_flag,
+#' "id2", NA_character_, "Yes", 
+#' "id3", "No", NA_character_,
+#' "id6", NA_character_, NA_character_)
+#' 
+#' example_df %>% 
+#' join_replace_na(ads = example_ads, column = recurrence_flag) %>% 
+#' join_replace_na(ads = example_ads, column = mets_flag)
+join_replace_na <- function(.data, ads, column, na_fill = "Unknown") {
+  .data %>% 
+    full_join(ads %>% 
+                select(patientid) %>% 
+                distinct(), 
+              by = "patientid") %>% 
+    mutate({{column}} := tidyr::replace_na({{column}}, na_fill))
+}
+  
+#' Check patient argument
+#'
+#' This function checks the input data frame for the typical patient columns, `patientid` and
+#' `participantid`. It is intended as data validation tool for the common function design pattern of using
+#' an argument to specify a data frame of patients to use in the function (e.g., to filter data to).
+#'
+#' If either `patientid` and/or `participantid` are present, it returns a vector of the present columns,
+#' which can be used in joins or other function logic.
+#'
+#' If neither `patientid` nor `participantid` are present, it returns an error.
+#'
+#' If `participantid` is not present and `oc_warning = TRUE`, it warns that `participantid` is not present.
+#' It is recommended that `oc_warning` is set to `TRUE` when using this function in the context of
+#' OpenClinica data, since OpenClinica data is best filtered by a prioritized `participantid` due to
+#' duplicated patients with the same `patientid`.
+#'
+#' @param .data Data frame to check for the existence of `patientid` and/or `participantid` columns.
+#' @param oc_warning Warn when `participantid` is missing? Defaults to FALSE. It is recommended that
+#'   `oc_warning` is set to `TRUE` when using this function in the context of OpenClinica data, since
+#'   OpenClinica data is best filtered by a prioritized `participantid` due to duplicated patients with the
+#'   same `patientid`.
+#'
+#' @return A vector of the present patient columns ("patientid" and/or "participantid").
+#' 
+#' @examples
+#' x <- tribble(~patientid, ~participantid,
+#'              1, 1,
+#'              2, 2,
+#'              3, 3)
+#' x %>% check_patient_arg()
+#' x %>% select(-patientid) %>% check_patient_arg()
+#' x %>% select(-participantid) %>% check_patient_arg(oc_warning = TRUE)
+check_patient_arg <- function(.data, oc_warning = FALSE) {
+  if (!is.null(.data)) {
+    
+    .data_name <- deparse(substitute(.data))
+    
+    if (!is.data.frame(.data)) abort(glue("{.data_name} is not a data frame"))
+    
+    patient_cols <- intersect(names(.data), c("patientid", "participantid"))
+    
+    if (length(patient_cols) == 0 ) abort(glue("patientid and participantid are missing from {.data_name} - at least one of them must be present"))
+    
+    if (!"participantid" %in% patient_cols & oc_warning) warn(glue("participantid is not in {.data_name} - it is best practice to use a prioritized participantid when pulling from OC due to patient duplication!\nUsing patientid only"))
+    
+    patient_cols
+    
+  } else {
+    
+    NULL
+    
+  }
+}
