@@ -1431,6 +1431,7 @@ as_percent <- function(prop_,round=0) {
   paste0(round(prop_*100,round),'%')
 }
 
+    
 #' tbl condition
 #'
 #' Output a message if a table condition is met
