@@ -346,7 +346,7 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <- function(data, filters, strat = NULL, .label = ' ') {
+attrition_table <- function(data, filters, strat = NULL, tab_label = ' ') {
   patients <- list() 
   patients$all <- data$patientid
   patients$included <- data$patientid
@@ -442,7 +442,7 @@ attrition_table <- function(data, filters, strat = NULL, .label = ' ') {
       locations = cells_body(columns = Total)
     ) %>% 
     opt_horizontal_padding(scale = 3) %>%
-    tab_stubhead(label = .label) %>%
+    tab_stubhead(label = tab_label) %>%
     return()
 }
 
