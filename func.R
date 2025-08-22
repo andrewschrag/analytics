@@ -346,7 +346,7 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <- function(data, filters, strat = NULL) {
+attrition_table <- function(data, filters, strat = NULL, label = ' ') {
   patients <- list() 
   patients$all <- data$patientid
   patients$included <- data$patientid
@@ -408,7 +408,7 @@ attrition_table <- function(data, filters, strat = NULL) {
       `Included(%)` =  ifelse(row_number() == 1, '-', as_percent(`Patients` / lag(Patients), 1))
       ,`Excluded(n)` = lag(Patients, default = Patients[1]) - Patients
     ) %>%
-    gt(rowname_col = 'Criteria') %>% 
+    gt(rowname_col = label) %>% 
     fmt_number(
       decimals = 0,
       sep_mark = ","
