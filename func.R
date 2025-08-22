@@ -346,7 +346,7 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <- function(data, filters, strat = NULL, label = ' ') {
+attrition_table <- function(data, filters, strat = NULL, .label = ' ') {
   patients <- list() 
   patients$all <- data$patientid
   patients$included <- data$patientid
@@ -362,7 +362,7 @@ attrition_table <- function(data, filters, strat = NULL, label = ' ') {
         table,
         tibble(
           'Criteria' = names(filters[filt]),
-          'Patients' = filt_pats %>%
+          'Total' = filt_pats %>%
             count_patients() %>%
             .$patients
         )
@@ -376,7 +376,7 @@ attrition_table <- function(data, filters, strat = NULL, label = ' ') {
     
     #unique(data[[strat]]) %>% print
     
-    for (hs in c(sort(unique(data[[strat]])), 'Patients')) {
+    for (hs in c(sort(unique(data[[strat]])), 'Total')) {
       strat_tables[[hs]] <- table
       for (filt in 1:length(filters)) {
         filt_pats <- data %>%
@@ -385,13 +385,13 @@ attrition_table <- function(data, filters, strat = NULL, label = ' ') {
         
         patients$included <- filt_pats$patientid
         
-        .label =  ifelse(hs == 'Patients', hs, str_to_upper(hs))
+        .label =  ifelse(hs == 'Total', hs, str_to_upper(hs))
         strat_tables[[hs]] <-  bind_rows(
           strat_tables[[hs]],
           tibble(
             'Criteria' = names(filters[filt]),
             !!as.symbol(.label) := filt_pats %>%
-              { `if`(hs != 'Patients', filter(., {{strat_var}} == hs), .) } %>%
+              { `if`(hs != 'Total', filter(., {{strat_var}} == hs), .) } %>%
               count_patients() %>%
               .$patients
           )
@@ -405,10 +405,10 @@ attrition_table <- function(data, filters, strat = NULL, label = ' ') {
   
   table %>% 
     mutate(
-      `Included(%)` =  ifelse(row_number() == 1, '-', as_percent(`Patients` / lag(Patients), 1))
-      ,`Excluded(n)` = lag(Patients, default = Patients[1]) - Patients
+      `Included(%)` =  ifelse(row_number() == 1, '-', as_percent(`Total` / lag(Total), 1))
+      ,`Excluded(n)` = lag(Total, default = Total[1]) - Total
     ) %>%
-    gt(rowname_col = label) %>% 
+    gt(rowname_col = 'Criteria') %>% 
     fmt_number(
       decimals = 0,
       sep_mark = ","
@@ -439,9 +439,10 @@ attrition_table <- function(data, filters, strat = NULL, label = ' ') {
     ) %>% 
     tab_style(
       style = cell_text(size = '1.2rem', weight = '600'),
-      locations = cells_body(columns = Patients)
+      locations = cells_body(columns = Total)
     ) %>% 
     opt_horizontal_padding(scale = 3) %>%
+    tab_stubhead(label = .label) %>%
     return()
 }
 
