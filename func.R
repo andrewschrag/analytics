@@ -363,7 +363,7 @@ attrition_table <- function(data, filters, strat = NULL) {
     for (filt in 1:length(filters)) {
       filt_pats = data %>%
         filter(patientid %in% patients$included, !!as.symbol(filters[[filt]])) %>%
-        select(patientid, sourcename)
+        select(patientid)
       
       table <- bind_rows(
         table,
@@ -388,7 +388,7 @@ attrition_table <- function(data, filters, strat = NULL) {
       for (filt in 1:length(filters)) {
         filt_pats <- data %>%
           filter(patientid %in% patients$included,!!as.symbol(filters[[filt]])) %>%
-          select(patientid, sourcename, {{strat_var}})
+          select(patientid, {{strat_var}})
         
         patients$included <- filt_pats$patientid
         
