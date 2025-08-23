@@ -197,10 +197,10 @@ get_ads_data <- function(cohort, variables, spmd = spmd_con()){
 }
 
     
-unnest_ads_json <- function(ads, col, cores = 12){
-  .col = as.symbol(col)
+unnest_ads_json <- function(.data, col, cores = 12){
+  .col = enquo(col)
   
-  ads %>% 
+  .data %>% 
     mutate({{.col}} := 
            parallel::mclapply({{.col}}, 
                               function(x){ syhelpr::fromJSON_na(x) %>% as.data.frame() },
