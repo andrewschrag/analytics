@@ -346,7 +346,14 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <- function(data, filters, strat = NULL, label = ' ') {
+attrition_table <- function(data, filters, strat = NULL) {
+
+  if(!is.list(filters)){
+    .filt = filters
+    filters <- data %>% colnames %>% tail(length(.filt)) 
+    names(filters) <- .filt
+  }
+  
   patients <- list() 
   patients$all <- data$patientid
   patients$included <- data$patientid
