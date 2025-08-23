@@ -346,12 +346,14 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <- function(data, filters, strat = NULL) {
+attrition_table <- function(data, filters, strat = NULL, label = ' ') {
 
   if(!is.list(filters)){
     .filt = filters
     filters <- data %>% colnames %>% tail(length(.filt)) 
     names(filters) <- .filt
+
+    filters %>% message
   }
   
   patients <- list() 
