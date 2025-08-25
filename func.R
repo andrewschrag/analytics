@@ -346,15 +346,18 @@ naaccr_med_search <- function(pattern) {
 
 
 
-attrition_table <- function(data, filters, strat = NULL, label = ' ') {
-
-  if(!is.list(filters)){
-    .filt = filters
-    filters <- data %>% colnames %>% tail(length(.filt)) 
-    names(filters) <- .filt
-
-    filters %>% message
+attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria), label = ' ') {
+  
+  if(!is.list(criteria)){
+    filters <- data %>% colnames %>% tail(length(criteria))
+    names(filters) <- criteria
   }
+
+  filters <- (lapply(criteria, `[[`, 'col'))[sort]
+  
+  footnotes = lapply(criteria, function(el) {
+    if (!is.null(el$footnote)) el$footnote else NULL
+  }) 
   
   patients <- list() 
   patients$all <- data$patientid
@@ -363,6 +366,7 @@ attrition_table <- function(data, filters, strat = NULL, label = ' ') {
   
   if (strat %>% length < 1) {
     for (filt in 1:length(filters)) {
+      print(filt)
       filt_pats = data %>%
         filter(patientid %in% patients$included, !!as.symbol(filters[[filt]])) %>%
         select(patientid)
@@ -412,7 +416,9 @@ attrition_table <- function(data, filters, strat = NULL, label = ' ') {
     table <- strat_tables %>% reduce(left_join)
   }
   
-  table %>% 
+  
+  
+  output <- table %>% 
     mutate(
       `Included(%)` =  ifelse(row_number() == 1, '-', as_percent(`Total` / lag(Total), 1))
       ,`Excluded(n)` = lag(Total, default = Total[1]) - Total
@@ -451,8 +457,23 @@ attrition_table <- function(data, filters, strat = NULL, label = ' ') {
       locations = cells_body(columns = Total)
     ) %>% 
     opt_horizontal_padding(scale = 3) %>%
-    tab_stubhead(label = label) %>%
-    return()
+    tab_stubhead(label = label)
+    
+    
+    if(length(footnotes)>0){
+      for(footnote in 1:length(footnotes)){
+
+        if(!is.null(footnotes[[footnote]])){
+          output <- output %>% 
+            gt::tab_footnote(
+              footnote = footnotes[[footnote]],
+              locations =  cells_stub(rows = footnote)
+            )
+        }
+      }
+    }
+  
+    return(output)
 }
 
 
