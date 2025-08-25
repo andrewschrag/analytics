@@ -347,15 +347,17 @@ naaccr_med_search <- function(pattern) {
 
 
 attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria), label = ' ') {
+
+  .criteria = criteria[sort]
   
   if(!is.list(criteria)){
     filters <- data %>% colnames %>% tail(length(criteria))
     names(filters) <- criteria
   }
 
-  filters <- (lapply(criteria, `[[`, 'col'))[sort]
+  filters <- lapply(.criteria, `[[`, 'col')
   
-  footnotes = lapply(criteria, function(el) {
+  footnotes = lapply(.criteria, function(el) {
     if (!is.null(el$footnote)) el$footnote else NULL
   }) 
   
