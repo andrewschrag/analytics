@@ -366,7 +366,6 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
   
   if (strat %>% length < 1) {
     for (filt in 1:length(filters)) {
-      print(filt)
       filt_pats = data %>%
         filter(patientid %in% patients$included, !!as.symbol(filters[[filt]])) %>%
         select(patientid)
@@ -462,7 +461,6 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
     
     if(length(footnotes)>0){
       for(footnote in 1:length(footnotes)){
-
         if(!is.null(footnotes[[footnote]])){
           output <- output %>% 
             gt::tab_footnote(
