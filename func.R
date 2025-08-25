@@ -375,7 +375,7 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
         tibble(
           'Criteria' = names(filters[filt]),
           'Total' = filt_pats %>%
-            count_patients() %>%
+            summarise(patients = n_distinct(patientid)) %>%
             .$patients
         )
       )
@@ -404,7 +404,7 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
             'Criteria' = names(filters[filt]),
             !!as.symbol(.label) := filt_pats %>%
               { `if`(hs != 'Total', filter(., {{strat_var}} == hs), .) } %>%
-              count_patients() %>%
+              summarise(patients = n_distinct(patientid)) %>%
               .$patients
           )
         )
