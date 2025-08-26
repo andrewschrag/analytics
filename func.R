@@ -346,7 +346,7 @@ naaccr_med_search <- function(pattern) {
 
 
 
-built_attrition_data <- function(.data, .criteria) {
+build_attrition_data <- function(.data, .criteria) {
   for(criterion in .criteria){
     .col = as.symbol(criterion$col)
     
