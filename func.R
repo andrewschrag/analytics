@@ -353,7 +353,6 @@ built_attrition_data <- function(.data, .criteria) {
     .data = .data %>% 
       mutate({{ .col }} := patientid %in% criterion$data$patientid)
   }
-  
   return(.data)
 }
 
