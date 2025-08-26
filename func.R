@@ -346,6 +346,20 @@ naaccr_med_search <- function(pattern) {
 
 
 
+built_attrition_data <- function(.data, .criteria) {
+  for(criterion in .criteria){
+    .col = as.symbol(criterion$col)
+    
+    .data = .data %>% 
+      mutate({{ .col }} := patientid %in% criterion$data$patientid)
+  }
+  
+  return(.data)
+}
+
+
+
+
 attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria), label = ' ') {
 
   .criteria = criteria[sort]
