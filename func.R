@@ -1836,3 +1836,16 @@ check_patient_arg <- function(.data, oc_warning = FALSE) {
     
   }
 }
+
+
+
+icd10 <- function () 
+{
+    icd::get_icd10cm_active() %>% as_tibble %>% mutate(icd10 = as.character(code), 
+        icd10_long = ifelse(nchar(icd10) > 3, gsub("^(.{3})(.*){1}$", 
+            "\\1\\.\\2", icd10), icd10)) %>% select(icd10, icd10_long, 
+        icd_description = short_desc, icd_parent = major, sub_chapter, 
+        chapter) %>% mutate_if(is.factor, ~as.character(.)) %>% 
+        distinct %>% bind_rows(list(icd10 = "U071", icd_description = "COVID-19", 
+        icd_parent = "COVID-19"))
+}
