@@ -500,6 +500,7 @@ pretty_gt <- function(table, label = ''){
       table_body.border.top.width = "3px",
       table.border.top.style = 'hidden',
       table.border.bottom.color = '#fff',
+      table.font.names = c("Assistant", 'Roboto', "Arial", "sans-serif"),
       table.font.size = px(16),
       column_labels.border.bottom.color = '#f5f5f5',
       column_labels.border.bottom.style = "solid",
