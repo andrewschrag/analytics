@@ -51,7 +51,7 @@ make_table <-  function (df,
                            all_continuous() ~ "continuous2"
                          ),
                          digits =  list(
-                           all_categorical() ~ 0,
+                           all_categorical() ~ c(0,1),
                            ends_with('year') ~ list(format_year)
                          ),
                          sort = 'freq',  
