@@ -1882,3 +1882,14 @@ icd10 <- function ()
         distinct %>% bind_rows(list(icd10 = "U071", icd_description = "COVID-19", 
         icd_parent = "COVID-19"))
 }
+
+
+add_percent <- function (df, total = sum(unique(df$patients)), add_totals = TRUE) 
+{
+    df <- df %>% mutate(percent = paste(round(100 * (patients/total), 
+        2), "%"))
+    if (add_totals) {
+        df <- df %>% janitor::adorn_totals()
+    }
+    df
+}
