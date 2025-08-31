@@ -492,11 +492,7 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
 
 pretty_gt <- function(table, label = ''){
   table %>%
-    as_gt() %>% 
-    fmt_number(
-      decimals = 0,
-      sep_mark = ","
-    ) %>% 
+    as_gt() %>%
     tab_options(
       table.width = '85%',
       table_body.border.top.color = '#000',
@@ -509,24 +505,19 @@ pretty_gt <- function(table, label = ''){
       column_labels.border.bottom.style = "solid",
       column_labels.border.bottom.width = "1px",
       column_labels.font.weight = '600',
-      data_row.padding = px(35),
-      column_labels.padding = px(35),
-      heading.padding = px(35)
-    ) %>% 
+      data_row.padding = px(15),
+      column_labels.padding = px(15),
+      heading.padding = px(10)
+    ) %>%
     tab_style(
       style = list(cell_text(weight = "500"), cell_borders(sides = c("right"), style = 'hidden')),
       locations = cells_stub()
-    ) %>% 
+    ) %>%
     tab_style(
-      style = cell_text(size = '1.2rem'),
+      style = cell_text(size = '1.05rem'),
       locations = cells_body()
-    ) %>% 
-    tab_style(
-      style = cell_text(size = '1.2rem', weight = '600'),
-      locations = cells_body(columns = Total)
-    ) %>% 
-    opt_horizontal_padding(scale = 3) %>%
-    tab_stubhead(label = label)
+    ) %>%
+    opt_horizontal_padding(scale = 3)
 }
   
 
