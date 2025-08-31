@@ -1872,8 +1872,7 @@ check_patient_arg <- function(.data, oc_warning = FALSE) {
 
 
 
-icd10 <- function () 
-{
+icd10 <- function () {
     icd::get_icd10cm_active() %>% as_tibble %>% mutate(icd10 = as.character(code), 
         icd10_long = ifelse(nchar(icd10) > 3, gsub("^(.{3})(.*){1}$", 
             "\\1\\.\\2", icd10), icd10)) %>% select(icd10, icd10_long, 
@@ -1884,8 +1883,7 @@ icd10 <- function ()
 }
 
 
-add_percent <- function (df, total = sum(unique(df$patients)), add_totals = TRUE) 
-{
+add_percent <- function (df, total = sum(unique(df$patients)), add_totals = TRUE){
     df <- df %>% mutate(percent = paste(round(100 * (patients/total), 
         2), "%"))
     if (add_totals) {
