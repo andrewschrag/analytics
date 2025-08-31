@@ -24,6 +24,7 @@ agelabels <<-
     '65-79',
     '80+')
 
+view = utils::View
 
 format_year <- function(x) style_number(as.numeric(x), digits = 0, big.mark = '') %>% suppressWarnings
 convert_dates <- function (df, regex = "(^date_of_|_dt$|dts$|^dob$|date$)", ...) 
