@@ -492,7 +492,7 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
 
 pretty_gt <- function(table, label = ''){
   table %>%
-  gt() %>% 
+    as_gt() %>% 
     fmt_number(
       decimals = 0,
       sep_mark = ","
