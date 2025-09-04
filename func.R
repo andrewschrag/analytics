@@ -491,7 +491,7 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
 }
 
 
-pretty_gt <- function(table, label = ''){
+pretty_gt <- function(table, label = '', padding = 10){
   table %>%
     as_gt() %>%
     tab_options(
@@ -507,9 +507,9 @@ pretty_gt <- function(table, label = ''){
       column_labels.border.bottom.style = "solid",
       column_labels.border.bottom.width = "1px",
       column_labels.font.weight = '600',
-      data_row.padding = px(15),
-      column_labels.padding = px(15),
-      heading.padding = px(10)
+      data_row.padding = px(padding),
+      column_labels.padding = px(padding),
+      heading.padding = px(padding * .75)
     ) %>%
     tab_style(
       style = list(cell_text(weight = "500"), cell_borders(sides = c("right"), style = 'hidden')),
