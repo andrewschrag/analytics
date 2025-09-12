@@ -492,8 +492,11 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
 
 
 pretty_gt <- function(table, label = '', padding = 10){
+  is_gt <- "gt_tbl" %in% class(table)
+  
+  if(!is_gt) table = table %>% as_gt()
+  
   table %>%
-    as_gt() %>%
     tab_options(
       table.width = '85%',
       table_body.border.top.color = '#000',
@@ -521,6 +524,7 @@ pretty_gt <- function(table, label = '', padding = 10){
     ) %>%
     opt_horizontal_padding(scale = 3)
 }
+
   
 
 ## filter_study_pop with attrrition columns
