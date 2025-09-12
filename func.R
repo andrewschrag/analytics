@@ -491,14 +491,14 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
 }
 
 
-pretty_gt <- function(table, label = '', padding = 10){
+pretty_gt <- function(table, label = '', width = '80%', padding = 10){
   is_gt <- "gt_tbl" %in% class(table)
   
   if(!is_gt) table = table %>% as_gt()
   
   table %>%
     tab_options(
-      table.width = '85%',
+      table.width = width,
       table_body.border.top.color = '#000',
       table_body.border.top.style = "solid",
       table_body.border.top.width = "3px",
