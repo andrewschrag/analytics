@@ -207,3 +207,16 @@ unnest_ads_json <- function(.data, col, cores = 12){
                               mc.cores = cores, mc.cleanup = TRUE)) %>% 
     tidyr::unnest({{.col}}) 
 }
+
+
+get_ads_vars <- function(.cohort = NA){
+  get_ads_dd(cohort = .cohort) %>% 
+    filter(is.na(dataframe_name)) %>% 
+    .$variable_name
+}
+
+get_ads_dataframes <- function(.cohort = NA){
+  get_ads_dd(cohort = .cohort) %>% 
+    filter(!is.na(dataframe_name)) %>% 
+    .$dataframe_name
+}
