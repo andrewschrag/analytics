@@ -213,12 +213,12 @@ get_ads_vars <- function(.cohort = NA){
   get_ads_dd(cohort = .cohort) %>% 
     filter(is.na(dataframe_name)) %>% 
     .$variable_name %>%
-    distinct
+    unique
 }
 
 get_ads_dataframes <- function(.cohort = NA){
   get_ads_dd(cohort = .cohort) %>% 
     filter(!is.na(dataframe_name)) %>% 
     .$dataframe_name %>%
-    distinct
+    unique
 }
