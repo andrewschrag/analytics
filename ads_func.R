@@ -209,6 +209,7 @@ unnest_ads_json <- function(.data, col, cores = 12){
 }
 
 
+    
 get_ads_vars <- function(.cohort = NA){
   get_ads_dd(cohort = .cohort) %>% 
     filter(is.na(dataframe_name)) %>% 
