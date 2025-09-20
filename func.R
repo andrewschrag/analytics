@@ -360,39 +360,49 @@ build_attrition_data <- function(.data, .criteria) {
 
 
 
-attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria), label = ' ') {
-
-  .criteria = criteria[sort]
+attrition_table <- function(
+    data, criteria, strat = NULL, sort = names(criteria), label = " ",
+    pct_accuracy = 0.1
+) {
+  library(dplyr)
+  library(rlang)
+  library(gt)
+  library(stringr)
+  library(purrr)
+  library(scales)
   
-  if(!is.list(criteria)){
-    filters <- data %>% colnames %>% tail(length(criteria))
+  .criteria <- criteria[sort]
+  
+  if (!is.list(criteria)) {
+    filters <- colnames(data) %>% tail(length(criteria))
     names(filters) <- criteria
   }
-
-  filters <- lapply(.criteria, `[[`, 'col')
   
-  footnotes = lapply(.criteria, function(el) {
-    if (!is.null(el$footnote)) el$footnote else NULL
-  }) 
+  filters <- lapply(.criteria, `[[`, "col")
+  footnotes <- lapply(.criteria, function(el) if (!is.null(el$footnote)) el$footnote else NULL)
   
-  patients <- list() 
-  patients$all <- data$patientid
-  patients$included <- data$patientid
+  patients <- list(all = data$patientid, included = data$patientid)
   table <- tibble()
   
-  if (strat %>% length < 1) {
-    for (filt in 1:length(filters)) {
-      filt_pats = data %>%
+  # Build list of strat labels + Total
+  if (is.null(strat)) {
+    strats <- c("Total")
+  } else {
+    strats <- c(sort(unique(data[[strat]])), "Total")
+  }
+  
+  if (length(strat) < 1) {
+    # No stratting: only Total counts
+    for (filt in seq_along(filters)) {
+      filt_pats <- data %>%
         filter(patientid %in% patients$included, !!as.symbol(filters[[filt]])) %>%
         select(patientid)
       
       table <- bind_rows(
         table,
         tibble(
-          'Criteria' = names(filters[filt]),
-          'Total' = filt_pats %>%
-            summarise(patients = n_distinct(patientid)) %>%
-            .$patients
+          Criteria = names(filters[filt]),
+          Total = filt_pats %>% summarise(patients = n_distinct(patientid)) %>% .$patients
         )
       )
       
@@ -400,26 +410,24 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
     }
   } else {
     strat_tables <- list()
-    strat_var = sym(strat)
+    strat_var <- sym(strat)
     
-    #unique(data[[strat]]) %>% print
-    
-    for (hs in c(sort(unique(data[[strat]])), 'Total')) {
-      strat_tables[[hs]] <- table
-      for (filt in 1:length(filters)) {
+    for (.strat in strats) {
+      strat_tables[[.strat]] <- table
+      for (filt in seq_along(filters)) {
         filt_pats <- data %>%
-          filter(patientid %in% patients$included,!!as.symbol(filters[[filt]])) %>%
-          select(patientid, {{strat_var}})
+          filter(patientid %in% patients$included, !!as.symbol(filters[[filt]])) %>%
+          select(patientid, {{ strat_var }})
         
         patients$included <- filt_pats$patientid
         
-        .label =  ifelse(hs == 'Total', hs, str_to_upper(hs))
-        strat_tables[[hs]] <-  bind_rows(
-          strat_tables[[hs]],
+        .label <- ifelse(.strat == "Total", .strat, str_to_upper(.strat))
+        strat_tables[[.strat]] <- bind_rows(
+          strat_tables[[.strat]],
           tibble(
-            'Criteria' = names(filters[filt]),
+            Criteria = names(filters[filt]),
             !!as.symbol(.label) := filt_pats %>%
-              { `if`(hs != 'Total', filter(., {{strat_var}} == hs), .) } %>%
+              { `if`(.strat != "Total", filter(., {{ strat_var }} == .strat), .) } %>%
               summarise(patients = n_distinct(patientid)) %>%
               .$patients
           )
@@ -428,67 +436,113 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
       patients$included <- patients$all
     }
     
-    table <- strat_tables %>% reduce(left_join)
+    table <- strat_tables %>% reduce(left_join, by = "Criteria")
   }
   
+  # Keep numeric copy if needed outside
+  out_table <<- table
   
-  
-  output <- table %>% 
+  # Add Included (%) and Excluded (N) based on Total
+  table_with_meta <- table %>%
     mutate(
-      `Included(%)` =  ifelse(row_number() == 1, '-', as_percent(`Total` / lag(Total), 1))
-      ,`Excluded(n)` = lag(Total, default = Total[1]) - Total
-    ) %>%
-    gt(rowname_col = 'Criteria') %>% 
-    fmt_number(
-      decimals = 0,
-      sep_mark = ","
-    ) %>% 
+      `Included (%)` = if_else(
+        row_number() == 1,
+        "-",
+        percent(Total / lag(Total), accuracy = pct_accuracy)
+      ),
+      `Excluded (N)` = lag(Total, default = first(Total)) - Total
+    )
+  
+  # Format strat columns (non-meta, non-Total) as "n (p%)"
+  strat_cols <- setdiff(names(table_with_meta), c("Criteria", "Total", "Included (%)", "Excluded (N)"))
+  
+  format_strat_n_pct <- function(vec) {
+    prev <- dplyr::lag(vec)
+    pct  <- ifelse(is.na(prev) | prev == 0, NA_real_, vec / prev)
+    
+    out <- character(length(vec))
+    # first row: just n (no percent)
+    out[1] <- comma(vec[1])
+    if (length(vec) > 1) {
+      n_str <- comma(vec[-1])
+      p_str <- ifelse(is.na(pct[-1]), "-", percent(pct[-1], accuracy = pct_accuracy))
+      out[-1] <- paste0(n_str, " (", p_str, ")")
+    }
+    out
+  }
+  
+  table_display <- table_with_meta
+  if (length(strat_cols)) {
+    table_display[strat_cols] <- lapply(table_with_meta[strat_cols], format_strat_n_pct)
+  }
+  
+  # Build gt table first (avoid inline conditional pipes)
+  gt_obj <- gt(table_display, rowname_col = "Criteria")
+  
+  # Format numeric columns (keep Total and Excluded (N) numeric)
+  numeric_cols <- intersect(c("Total", "Excluded (N)"), names(table_display))
+  if (length(numeric_cols)) {
+    gt_obj <- fmt_number(gt_obj, columns = all_of(numeric_cols), decimals = 0, sep_mark = ",")
+  }
+  
+  # Style & options
+  gt_obj <- gt_obj %>%
     tab_options(
-      table.width = '85%',
-      table_body.border.top.color = '#000',
+      table.width = "85%",
+      table_body.border.top.color = "#000",
       table_body.border.top.style = "solid",
       table_body.border.top.width = "3px",
-      table.border.top.style = 'hidden',
-      table.border.bottom.color = '#fff',
+      table.border.top.style = "hidden",
+      table.border.bottom.color = "#fff",
       table.font.size = px(16),
-      column_labels.border.bottom.color = '#f5f5f5',
+      column_labels.border.bottom.color = "#f5f5f5",
       column_labels.border.bottom.style = "solid",
       column_labels.border.bottom.width = "1px",
-      column_labels.font.weight = '600',
+      column_labels.font.weight = "600",
       data_row.padding = px(35),
       column_labels.padding = px(35),
       heading.padding = px(35)
-    ) %>% 
+    ) %>%
     tab_style(
-      style = list(cell_text(weight = "500"), cell_borders(sides = c("right"), style = 'hidden')),
+      style = list(
+        cell_text(weight = "500"),
+        cell_borders(sides = c("right"), style = "hidden")
+      ),
       locations = cells_stub()
-    ) %>% 
+    ) %>%
     tab_style(
-      style = cell_text(size = '1.2rem'),
+      style = cell_text(size = "1.2rem"),
       locations = cells_body()
-    ) %>% 
-    tab_style(
-      style = cell_text(size = '1.2rem', weight = '600'),
-      locations = cells_body(columns = Total)
-    ) %>% 
+    ) %>%
     opt_horizontal_padding(scale = 3) %>%
     tab_stubhead(label = label)
-    
-    
-    if(length(footnotes)>0){
-      for(footnote in 1:length(footnotes)){
-        if(!is.null(footnotes[[footnote]])){
-          output <- output %>% 
-            gt::tab_footnote(
-              footnote = footnotes[[footnote]],
-              locations =  cells_stub(rows = footnote)
-            )
-        }
+  
+  # Emphasize Total column if present
+  if ("Total" %in% names(table_display)) {
+    gt_obj <- tab_style(
+      gt_obj,
+      style = cell_text(size = "1.2rem", weight = "600"),
+      locations = cells_body(columns = "Total")
+    )
+  }
+  
+  # Footnotes
+  if (length(footnotes) > 0) {
+    for (i in seq_along(footnotes)) {
+      if (!is.null(footnotes[[i]])) {
+        gt_obj <- gt::tab_footnote(
+          gt_obj,
+          footnote = footnotes[[i]],
+          locations = cells_stub(rows = i)
+        )
       }
     }
+  }
   
-    return(output)
+  return(gt_obj)
 }
+
+
 
 
 pretty_gt <- function(table, label = '', width = '80%', padding = 10){
