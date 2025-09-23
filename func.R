@@ -2073,3 +2073,28 @@ add_percent <- function (df, total = sum(unique(df$patients)), add_totals = TRUE
     }
     df
 }
+
+
+
+view <- function (x, title)
+{
+  check <- Sys.getenv("_R_CHECK_SCREEN_DEVICE_", "")
+  msg <- "View() should not be used in examples etc"
+  if (identical(check, "stop"))
+    stop(msg, domain = NA)
+  else if (identical(check, "warn"))
+    warning(msg, immediate. = TRUE, noBreaks. = TRUE, domain = NA)
+  if (missing(title))
+    title <- paste("Data:", deparse(substitute(x))[1])
+  x0 <- as.data.frame(x)
+  x <- as.list(format.data.frame(x0))
+  rn <- row.names(x0)
+  if (any(rn != seq_along(rn)))
+    x <- c(list(row.names = rn), x)
+  if (!is.list(x) || !length(x) || !all(sapply(x, is.atomic)) ||
+      !max(lengths(x)))
+    stop("invalid 'x' argument")
+  if (grepl("darwin", R.version$os))
+    check_for_XQuartz(file.path(R.home("modules"), "R_de.so"))
+  invisible(.External2(C_dataviewer, x, title))
+}
