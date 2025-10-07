@@ -2098,3 +2098,60 @@ view <- function (x, title)
     check_for_XQuartz(file.path(R.home("modules"), "R_de.so"))
   invisible(.External2(C_dataviewer, x, title))
 }
+
+
+get_oc_patient_data <- function(schema_name = "s_gutsprod") {
+  oc_patient = get_oc_data('IG_PATIE_GROUP1', schema_name=schema_name) %>% 
+    select(participant_id, patientid=id, namefirst, namelast, dateofbirth, site_name) 
+  
+  oc_cancer = get_oc_data('IG_PRIMA_GROUP', schema_name=schema_name) %>% 
+    filter(!is.na(site)) %>% 
+    select(participant_id, site)
+  
+  oc_followup = get_oc_data("IG_FOLLO_GROUP", schema_name=schema_name) %>% 
+    select(participant_id, dateoflastabstraction, dateoflastcontact)
+  
+  oc_caserelease = get_oc_data("IG_CASER_GROUP1", schema_name=schema_name) %>% 
+    group_by(participant_id) %>%
+    arrange(
+      desc(!is.na(abstractfinal)),
+      desc(event_crf_status_label == 'Completed'),
+      desc(!is.na(datecompleted)),
+    ) %>% 
+    filter(row_number()==1) %>% 
+    ungroup %>% 
+    mutate(
+      abstract_final_values = get_oc_values(abstractfinal,  "abstract_final_values") 
+    ) %>% 
+    select(participant_id, datecompleted, abstract_final_values)
+  
+  oc_patient_data = oc_patient %>% 
+    full_join(oc_cancer, by="participant_id") %>%
+    full_join(oc_followup, by="participant_id") %>%
+    full_join(oc_caserelease, by="participant_id") %>% 
+    mutate(
+      last_abstraction_date = pmax(dateoflastabstraction, datecompleted, na.rm = TRUE),
+      namefirst = toupper(namefirst),
+      namelast = toupper(namelast),
+      dateofbirth = as_date(dateofbirth),
+      patientid = toupper(patientid)
+    ) %>% 
+    select(-dateoflastabstraction, -datecompleted) %>%
+    group_by(participant_id) %>%
+    arrange(desc(dateoflastcontact), desc(last_abstraction_date)) %>%
+    filter(row_number() == 1 & !is.na(patientid)) %>%
+    group_by(namefirst, namelast, dateofbirth, site) %>% 
+    arrange(desc(dateoflastcontact), desc(last_abstraction_date)) %>% 
+    mutate(
+      duplicates = if_else(
+        row_number() == 1, NA_character_,
+        first(participant_id)
+      )
+    ) %>% 
+    ungroup %>% 
+    select(
+      participant_id, site, patientid, site_name, abstract_final_values, duplicates, dateoflastcontact, last_abstraction_date
+    )
+  
+  return(oc_patient_data)
+}
