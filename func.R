@@ -517,7 +517,7 @@ attrition_table <- function(
     opt_horizontal_padding(scale = 3) %>%
     tab_stubhead(label = label) %>%
     tab_options(
-      container.class = "attr-table"
+      container.class = "attrition-table"
     )
   
   # Emphasize Total column if present
