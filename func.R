@@ -1076,13 +1076,13 @@ get_health_system_ads <- function(ads){
 #' @examples
 #' unnest_ads(systemic_therapy)
 #'
-unnest_ads <- function(df, col){
+unnest_ads <- function(df, col, add_cols = NULL){
   .col = enquo(col)
   patient_col = intersect(c("patientId", "patientid", "patient_id", "patientID", "patients", "patient", "subjectid"), names(df))[1]
   patient_col = sym(patient_col)
 
   df %>%
-    select({{ patient_col }}, {{ .col }}) %>%
+    select({{ patient_col }}, {{ .col }}, any_of(add_cols)) %>%
     filter(!is.na({{ .col }})) %>%
     unnest({{ .col }})
 }
