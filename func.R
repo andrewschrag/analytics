@@ -90,6 +90,7 @@ make_table <-  function (df,
     gttable = gttable %>% add_overall(last=last) %>% modify_footnote(c(all_stat_cols()) ~ NA) 
   
   gttable %>%
+    pretty_gt() %>%
     # as_gt() %>%
     # gt:::as.tags.gt_tbl() %>%
     suppressWarnings() %>%
@@ -703,7 +704,10 @@ pretty_gt <- function(table, label = '', width = '80%', padding = 10){
       style = cell_text(size = '1.05rem'),
       locations = cells_body()
     ) %>%
-    opt_horizontal_padding(scale = 3)
+    opt_horizontal_padding(scale = 3) %>%
+    tab_options(
+      container.class = "gt_table"
+    )
 }
 
   
