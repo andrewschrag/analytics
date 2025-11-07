@@ -681,7 +681,7 @@ pretty_gt <- function(table, label = '', width = '85%', padding = 10){
   
   if(!is_gt) table = table %>% as_gt()
   
-  table %>%
+  output <- table %>%
     tab_options(
       #container.class = "gt_table",
       table.width = width,
@@ -708,8 +708,10 @@ pretty_gt <- function(table, label = '', width = '85%', padding = 10){
       style = cell_text(size = '1.05rem'),
       locations = cells_body()
     ) %>%
-    opt_horizontal_padding(scale = 3) %>%
-    htmltools::div(class = "gt_table")
+    opt_horizontal_padding(scale = 3)
+
+  output <- htmltools::div(output, class = "gt_table")
+  
 }
 
   
