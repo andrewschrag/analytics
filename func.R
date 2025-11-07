@@ -90,7 +90,7 @@ make_table <-  function (df,
     gttable = gttable %>% add_overall(last=last) %>% modify_footnote(c(all_stat_cols()) ~ NA) 
   
   gttable %>%
-    pretty_gt() %>%
+    #pretty_gt() %>%
     # as_gt() %>%
     # gt:::as.tags.gt_tbl() %>%
     suppressWarnings() %>%
