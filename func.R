@@ -710,7 +710,7 @@ pretty_gt <- function(table, label = '', width = '85%', padding = 10){
     ) %>%
     opt_horizontal_padding(scale = 3)
 
-  output <- htmltools::div(output, class = "gt_table")
+  output <- htmltools::div(output, class = "gt_table_container")
   return(output)
 }
 
