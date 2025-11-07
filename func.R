@@ -6,7 +6,7 @@ is.na.Date <- function(x)
   is.na(as.POSIXlt(x))
 
 
-agebreaks <<-
+agebreaks <-
   c(0,
     18,
     30,
@@ -16,7 +16,7 @@ agebreaks <<-
     Inf)
 
 
-agelabels <<-
+agelabels <-
   c('< 18',
     '18-29',
     '30-49',
@@ -441,7 +441,7 @@ attrition_table <- function(
   }
   
   # Keep numeric copy if needed outside
-  out_table <<- table
+  out_table <- table
   
   # Add Included (%) and Excluded (N) based on Total
   table_with_meta <- table %>%
@@ -489,6 +489,7 @@ attrition_table <- function(
   # Style & options
   gt_obj <- gt_obj %>%
     tab_options(
+      container.class = "attrition-table",
       table.width = "85%",
       table_body.border.top.color = "#000",
       table_body.border.top.style = "solid",
@@ -516,10 +517,7 @@ attrition_table <- function(
       locations = cells_body()
     ) %>%
     opt_horizontal_padding(scale = 3) %>%
-    tab_stubhead(label = label) %>%
-    tab_options(
-      container.class = "attrition-table"
-    )
+    tab_stubhead(label = label) 
   
   # Emphasize Total column if present
   if ("Total" %in% names(table_display)) {
@@ -673,13 +671,14 @@ attrition_table <- function(data, criteria, strat = NULL, sort = names(criteria)
 
 
 
-pretty_gt <- function(table, label = '', width = '80%', padding = 10){
+pretty_gt <- function(table, label = '', width = '85%', padding = 10){
   is_gt <- "gt_tbl" %in% class(table)
   
   if(!is_gt) table = table %>% as_gt()
   
   table %>%
     tab_options(
+      container.class = "gt_table",
       table.width = width,
       table_body.border.top.color = '#000',
       table_body.border.top.style = "solid",
@@ -704,10 +703,7 @@ pretty_gt <- function(table, label = '', width = '80%', padding = 10){
       style = cell_text(size = '1.05rem'),
       locations = cells_body()
     ) %>%
-    opt_horizontal_padding(scale = 3) %>%
-    tab_options(
-      container.class = "gt_table"
-    )
+    opt_horizontal_padding(scale = 3) 
 }
 
   
@@ -749,14 +745,14 @@ apply_factors <-
     # df = dataset.table5
     # cols = cols.table5b
     #cols = c(cols)
-    cols.numeric <<-
+    cols.numeric <-
       paste0(df %>% select_if(is.numeric) %>% names(.), collapse = '|')
-    exclude_regex <<-
+    exclude_regex <-
       paste0(cols.numeric,
              ifelse(cols.numeric == '', '', '|'),
              'date|age|freq',
              collapse = '|')
-    .cols <<- cols[!grepl(exclude_regex, cols)]
+    .cols <- cols[!grepl(exclude_regex, cols)]
 
     if (length(.cols) == 0) {
       return(df)
