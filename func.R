@@ -489,7 +489,7 @@ attrition_table <- function(
   # Style & options
   gt_obj <- gt_obj %>%
     tab_options(
-      container.class = "attrition-table",
+      #container.class = "attrition-table",
       table.width = "85%",
       table_body.border.top.color = "#000",
       table_body.border.top.style = "solid",
@@ -540,7 +540,12 @@ attrition_table <- function(
       }
     }
   }
-  
+
+  gt_obj <-   htmltools::div(
+    gt_obj,
+    class = "attrition-table"
+  )
+                      
   return(gt_obj)
 }
 
@@ -678,7 +683,7 @@ pretty_gt <- function(table, label = '', width = '85%', padding = 10){
   
   table %>%
     tab_options(
-      container.class = "gt_table",
+      #container.class = "gt_table",
       table.width = width,
       table_body.border.top.color = '#000',
       table_body.border.top.style = "solid",
@@ -703,7 +708,8 @@ pretty_gt <- function(table, label = '', width = '85%', padding = 10){
       style = cell_text(size = '1.05rem'),
       locations = cells_body()
     ) %>%
-    opt_horizontal_padding(scale = 3) 
+    opt_horizontal_padding(scale = 3) %>%
+    htmltools::div(class = "gt_table")
 }
 
   
