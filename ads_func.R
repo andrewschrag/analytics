@@ -42,15 +42,7 @@ get_ads_dd <- function(...,
                        version = NULL,
                        collect = TRUE) {
   args = list(...)
-
-
-  if (dbGetInfo(con)$dbname == 'spmd') {
-    query <- tbl(spmd_con(), dbplyr::in_schema('ca', 'ads_data_dictionary'))
-  } else {
-    query <- tbl(npm_con(),
-                 in_catalog('spmd_prod', 'ca', 'ads_data_dictionary'))
-  }
-
+  query <- tbl(spmd_con(), dbplyr::in_schema('ca', 'ads_data_dictionary'))
 
   if (!is.null(args)) {
     for (arg in names(args)) {
