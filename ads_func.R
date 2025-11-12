@@ -92,8 +92,8 @@ get_ads_dd <- function(...,
 }
 
 
-get_ads_vars <- function(.cohort){
-  get_ads_dd(cohort=.cohort,con = npm_con()) %>% filter(!is.na(dataframe_name)) %>% .$variable_name %>% unique
+get_ads_vars <- function(.cohort, con){
+  get_ads_dd(cohort=.cohort,con = con) %>% filter(!is.na(dataframe_name)) %>% .$variable_name %>% unique
 }
 
 
