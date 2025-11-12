@@ -38,7 +38,7 @@ get_latest_record_ids <- function(element_id){
 
 # Get ADS Data Dictionary from CA schema
 get_ads_dd <- function(...,
-                       con = npm_con(),
+                       con,
                        version = NULL,
                        collect = TRUE) {
   args = list(...)
