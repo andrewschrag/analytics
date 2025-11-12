@@ -92,11 +92,6 @@ get_ads_dd <- function(...,
 }
 
 
-get_ads_vars <- function(.cohort, con){
-  get_ads_dd(cohort=.cohort,con = con) %>% filter(!is.na(dataframe_name)) %>% .$variable_name %>% unique
-}
-
-
 # Get ADS Planned Version
 get_ads_dd_planned <- function(dd = NULL, ...){
   if(is.null(dd)){
