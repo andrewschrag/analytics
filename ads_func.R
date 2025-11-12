@@ -37,47 +37,63 @@ get_latest_record_ids <- function(element_id){
 }
 
 # Get ADS Data Dictionary from CA schema
-get_ads_dd <- function(..., version = NULL, collect = TRUE) {
+get_ads_dd <- function(...,
+                       con = npm_con(),
+                       version = NULL,
+                       collect = TRUE) {
   args = list(...)
-  query = tbl(spmd, dbplyr::in_schema('ca', 'ads_data_dictionary'))
-  
-  if(!is.null(args)){
-    for(arg in names(args)){
+
+
+  if (dbGetInfo(con)$dbname == 'spmd') {
+    query <- tbl(spmd_con(), dbplyr::in_schema('ca', 'ads_data_dictionary'))
+  } else {
+    query <- tbl(npm_con(),
+                 in_catalog('spmd_prod', 'ca', 'ads_data_dictionary'))
+  }
+
+
+  if (!is.null(args)) {
+    for (arg in names(args)) {
       variable = as.symbol(arg)
       value = args[[arg]]
-      
-      if(!is.null(value)){
+
+      if (!is.null(value)) {
         query = query %>% filter({{ variable }} %in% c(value))
       }
     }
   }
-  
-  if (!is.null(version)){
-    if(tolower(version) == 'recent'){
-      query = query %>% 
-        collect %>% 
-        group_by(element_id, cohort) %>% 
-        filter(record_id == max(record_id, na.rm = T)) %>% 
+
+  if (!is.null(version)) {
+    if (tolower(version) == 'recent') {
+      query = query %>%
+        collect %>%
+        group_by(element_id, cohort) %>%
+        filter(record_id == max(record_id, na.rm = T)) %>%
         ungroup
-    } else if (tolower(version) == 'latest'){
-      query = query %>% 
-      filter(tolower(status) == 'production') %>% 
-      group_by(element_id, cohort) %>% 
-      filter(record_id == max(record_id)) %>% 
-      ungroup
-    } else if (tolower(version) == 'planned'){
-      query = query %>% 
-        filter(!is.na(planned_version)) 
+    } else if (tolower(version) == 'latest') {
+      query = query %>%
+        filter(tolower(status) == 'production') %>%
+        group_by(element_id, cohort) %>%
+        filter(record_id == max(record_id)) %>%
+        ungroup
+    } else if (tolower(version) == 'planned') {
+      query = query %>%
+        filter(!is.na(planned_version))
     } else {
       query = query %>% filter(version == version)
     }
   }
-  
-  if(collect){
+
+  if (collect) {
     return(query %>% collect)
   } else{
     return(query)
   }
+}
+
+
+get_ads_vars <- function(.cohort){
+  get_ads_dd(cohort=.cohort,con = npm_con()) %>% filter(!is.na(dataframe_name)) %>% .$variable_name %>% unique
 }
 
 
